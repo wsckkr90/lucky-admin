@@ -208,14 +208,15 @@
 </a>
 
 @endcan
-<a
-    href="#"
-    class="sidebar-link"
->
-    <span>◎</span>
-    Lucky Numbers
-</a>
-
+@can('lucky-numbers.view')
+    <a
+        href="{{ route('admin.lucky-numbers.index') }}"
+        class="sidebar-link {{ request()->routeIs('admin.lucky-numbers.*') ? 'active' : '' }}"
+    >
+        <span>◎</span>
+        Lucky Numbers
+    </a>
+@endcan
 @can('scraper.view')
 
 <a
@@ -262,11 +263,15 @@
             Content
         </div>
 
-        <a href="#" class="sidebar-link">
-            <span>▤</span>
-            Blogs
-        </a>
-
+        @can('blogs.view')
+    <a
+        href="{{ route('admin.blogs.index') }}"
+        class="sidebar-link {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}"
+    >
+        <span>▤</span>
+        Blogs
+    </a>
+@endcan
         @can('faqs.view')
 
 <a
@@ -319,10 +324,15 @@
 
 @endcan
 
-        <a href="#" class="sidebar-link">
-            <span>☰</span>
-            Forum
-        </a>
+        @can('forum.view')
+    <a
+        href="{{ route('admin.forum.index') }}"
+        class="sidebar-link {{ request()->routeIs('admin.forum.*') ? 'active' : '' }}"
+    >
+        <span>☰</span>
+        Forum
+    </a>
+@endcan
 
         <div class="sidebar-section">
             Administration
@@ -396,15 +406,25 @@
 
 @endcan
 
-        <a href="#" class="sidebar-link">
-            <span>↻</span>
-            Cache
-        </a>
+        @can('cache.view')
+    <a
+        href="{{ route('admin.cache.index') }}"
+        class="sidebar-link {{ request()->routeIs('admin.cache.*') ? 'active' : '' }}"
+    >
+        <span>↻</span>
+        Cache
+    </a>
+@endcan
 
-        <a href="#" class="sidebar-link">
-            <span>⏱</span>
-            Scheduler
-        </a>
+       @can('scheduler.view')
+    <a
+        href="{{ route('admin.scheduler.index') }}"
+        class="sidebar-link {{ request()->routeIs('admin.scheduler.*') ? 'active' : '' }}"
+    >
+        <span>⏱</span>
+        Scheduler
+    </a>
+@endcan
 
     </aside>
 

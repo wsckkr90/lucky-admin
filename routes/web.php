@@ -22,6 +22,11 @@ use App\Http\Controllers\Admin\KhaiwalController;
 use App\Http\Controllers\Admin\SeoContentController;
 use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\SocialController;
+use App\Http\Controllers\Admin\BlogController;
+use App\Http\Controllers\Admin\LuckyNumberController;
+use App\Http\Controllers\Admin\ForumController;
+use App\Http\Controllers\Admin\CacheController;
+use App\Http\Controllers\Admin\SchedulerController;
 /*
 |--------------------------------------------------------------------------
 | Public Routes
@@ -148,6 +153,127 @@ Route::middleware(['auth', 'admin'])
 | Khaiwals
 |--------------------------------------------------------------------------
 */
+
+/*
+|--------------------------------------------------------------------------
+| Forum
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/forum',
+    [ForumController::class, 'index']
+)
+    ->middleware('permission:forum.view')
+    ->name('forum.index');
+
+Route::get(
+    '/forum/{forumPost}',
+    [ForumController::class, 'show']
+)
+    ->middleware('permission:forum.view')
+    ->name('forum.show');
+
+Route::put(
+    '/forum/{forumPost}',
+    [ForumController::class, 'update']
+)
+    ->middleware('permission:forum.update')
+    ->name('forum.update');
+
+Route::delete(
+    '/forum/{forumPost}',
+    [ForumController::class, 'destroy']
+)
+    ->middleware('permission:forum.delete')
+    ->name('forum.destroy');
+
+
+/*
+|--------------------------------------------------------------------------
+| Cache
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/cache',
+    [CacheController::class, 'index']
+)
+    ->middleware('permission:cache.view')
+    ->name('cache.index');
+
+Route::post(
+    '/cache/clear',
+    [CacheController::class, 'clear']
+)
+    ->middleware('permission:cache.clear')
+    ->name('cache.clear');
+
+
+/*
+|--------------------------------------------------------------------------
+| Scheduler
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/scheduler',
+    [SchedulerController::class, 'index']
+)
+    ->middleware('permission:scheduler.view')
+    ->name('scheduler.index');
+
+Route::post(
+    '/scheduler/run',
+    [SchedulerController::class, 'run']
+)
+    ->middleware('permission:scheduler.run')
+    ->name('scheduler.run');
+    
+Route::get('/lucky-numbers', [LuckyNumberController::class, 'index'])
+    ->middleware('permission:lucky-numbers.view')
+    ->name('lucky-numbers.index');
+
+Route::put('/lucky-numbers', [LuckyNumberController::class, 'update'])
+    ->middleware('permission:lucky-numbers.update')
+    ->name('lucky-numbers.update');
+// Blogs
+Route::get('/blogs', [BlogController::class, 'index'])
+    ->middleware('permission:blogs.view')
+    ->name('blogs.index');
+
+Route::get('/blogs/create', [BlogController::class, 'create'])
+    ->middleware('permission:blogs.create')
+    ->name('blogs.create');
+
+Route::post('/blogs', [BlogController::class, 'store'])
+    ->middleware('permission:blogs.create')
+    ->name('blogs.store');
+
+Route::get('/blogs/{blog}/edit', [BlogController::class, 'edit'])
+    ->middleware('permission:blogs.update')
+    ->name('blogs.edit');
+
+Route::put('/blogs/{blog}', [BlogController::class, 'update'])
+    ->middleware('permission:blogs.update')
+    ->name('blogs.update');
+
+Route::delete('/blogs/{blog}', [BlogController::class, 'destroy'])
+    ->middleware('permission:blogs.delete')
+    ->name('blogs.destroy');
+
+Route::post('/blogs/{blog}/publish', [BlogController::class, 'publish'])
+    ->middleware('permission:blogs.publish')
+    ->name('blogs.publish');
+
+Route::post('/blogs/{blog}/unpublish', [BlogController::class, 'unpublish'])
+    ->middleware('permission:blogs.publish')
+    ->name('blogs.unpublish');
+
+Route::post('/blogs/{blog}/toggle-featured', [BlogController::class, 'toggleFeatured'])
+    ->middleware('permission:blogs.update')
+    ->name('blogs.toggle-featured');
+
 Route::get(
     '/social',
     [SocialController::class, 'index']

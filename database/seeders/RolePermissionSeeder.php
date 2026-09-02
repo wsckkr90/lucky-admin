@@ -66,7 +66,15 @@ class RolePermissionSeeder extends Seeder
             'faqs.create',
             'faqs.update',
             'faqs.delete',
+             'forum.view',
+             'forum.update',
+            'forum.delete',
 
+             'cache.view',
+             'cache.clear',
+
+            'scheduler.view',
+            'scheduler.run',
             'seo.view',
             'seo.create',
             'seo.update',
@@ -79,6 +87,10 @@ class RolePermissionSeeder extends Seeder
             'scraper.run',
 
             'activity-logs.view',
+
+            'lucky-numbers.view',
+            'lucky-numbers.update',
+
         ];
 
         foreach ($permissions as $permission) {

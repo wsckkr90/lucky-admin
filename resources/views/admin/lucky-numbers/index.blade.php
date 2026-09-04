@@ -6,7 +6,6 @@
 
 <div class="container-fluid px-0">
 
-    {{-- Header --}}
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
 
         <div>
@@ -15,43 +14,71 @@
             </h1>
 
             <p class="text-muted mb-0">
-                Manage Lucky Ank, Final Ank and automatic scraping settings.
+                Manage and automatically scrape today's Lucky Ank and Final Ank.
             </p>
         </div>
 
         <div>
-            <span class="badge rounded-pill
-                {{ $autoScrapeLucky ? 'text-bg-success' : 'text-bg-secondary' }}">
-                <span class="me-1">●</span>
-                Auto Scrape {{ $autoScrapeLucky ? 'Enabled' : 'Disabled' }}
-            </span>
+            @if($autoScrapeLucky)
+                <span class="badge rounded-pill text-bg-success">
+                    ● Auto Scrape Enabled
+                </span>
+            @else
+                <span class="badge rounded-pill text-bg-secondary">
+                    ● Auto Scrape Disabled
+                </span>
+            @endif
         </div>
 
     </div>
 
 
-    {{-- Main Card --}}
-    <div class="card border-0 shadow-sm">
+    {{-- Status --}}
+    @if($lastStatus)
+
+        <div class="alert
+            {{ $lastStatus === 'success'
+                ? 'alert-success'
+                : 'alert-danger' }}
+            border-0 shadow-sm"
+        >
+
+            <div class="fw-semibold mb-1">
+                Last Scraper Status:
+                {{ ucfirst($lastStatus) }}
+            </div>
+
+            @if($lastRun)
+                <div class="small mb-1">
+                    Last Run:
+                    {{ $lastRun }}
+                </div>
+            @endif
+
+            @if($lastMessage)
+                <div class="small">
+                    {{ $lastMessage }}
+                </div>
+            @endif
+
+        </div>
+
+    @endif
+
+
+    {{-- Configuration --}}
+    <div class="card border-0 shadow-sm mb-4">
 
         <div class="card-header bg-white border-bottom py-3">
-            <div class="d-flex align-items-center gap-2">
-                <div
-                    class="rounded-circle d-flex align-items-center justify-content-center bg-light"
-                    style="width:42px;height:42px;"
-                >
-                    <span style="font-size:20px;">🍀</span>
-                </div>
 
-                <div>
-                    <h5 class="mb-0 fw-bold">
-                        Lucky Numbers Configuration
-                    </h5>
+            <h5 class="mb-1 fw-bold">
+                🍀 Lucky Numbers Configuration
+            </h5>
 
-                    <small class="text-muted">
-                        Configure values used by the Lucky Numbers system.
-                    </small>
-                </div>
-            </div>
+            <small class="text-muted">
+                Configure automatic scraping and manual fallback values.
+            </small>
+
         </div>
 
 
@@ -91,9 +118,29 @@
                     </div>
 
                     <div class="small text-muted mt-2">
-                        When enabled, the scraper can automatically update
-                        Lucky Ank and Final Ank values from the configured
-                        target source.
+                        When enabled, the scheduled scraper automatically
+                        fetches Lucky Ank and Final Ank from the configured
+                        target website.
+                    </div>
+
+                </div>
+
+
+                {{-- Target --}}
+                <div class="mb-4">
+
+                    <label class="form-label fw-semibold">
+                        Scraper Target
+                    </label>
+
+                    <div class="form-control bg-light text-muted">
+                        {{ $targetUrl ?: 'No scraper target configured' }}
+                    </div>
+
+                    <div class="form-text">
+                        This uses the existing
+                        <code>scraper.target_url</code>
+                        setting.
                     </div>
 
                 </div>
@@ -109,19 +156,15 @@
                         Lucky Ank
                     </label>
 
-                    <textarea
+                    <input
+                        type="text"
                         class="form-control @error('lucky_ank') is-invalid @enderror"
                         id="lucky_ank"
                         name="lucky_ank"
-                        rows="4"
+                        value="{{ old('lucky_ank', $luckyAnk) }}"
                         maxlength="1000"
-                        placeholder="Example: 0-2-3-4"
-                    >{{ old('lucky_ank', $luckyAnk) }}</textarea>
-
-                    <div class="form-text">
-                        Enter the Lucky Ank values exactly in the format
-                        required by your frontend/scraper.
-                    </div>
+                        placeholder="e.g. ( 0-2-3-4 )"
+                    >
 
                     @error('lucky_ank')
                         <div class="invalid-feedback">
@@ -142,19 +185,15 @@
                         Final Ank
                     </label>
 
-                    <textarea
+                    <input
+                        type="text"
                         class="form-control @error('final_ank') is-invalid @enderror"
                         id="final_ank"
                         name="final_ank"
-                        rows="4"
+                        value="{{ old('final_ank', $finalAnk) }}"
                         maxlength="1000"
-                        placeholder="Example: K-0, M-8"
-                    >{{ old('final_ank', $finalAnk) }}</textarea>
-
-                    <div class="form-text">
-                        Enter the Final Ank / market codes used by the
-                        existing Lucky Numbers system.
-                    </div>
+                        placeholder="e.g. K-0, M-8"
+                    >
 
                     @error('final_ank')
                         <div class="invalid-feedback">
@@ -165,69 +204,17 @@
                 </div>
 
 
-                {{-- Current Values Preview --}}
-                <div class="bg-light rounded-3 p-3 mb-4">
-
-                    <h6 class="fw-bold mb-3">
-                        Current Configuration
-                    </h6>
-
-                    <div class="row g-3">
-
-                        <div class="col-md-6">
-
-                            <div class="bg-white border rounded-3 p-3 h-100">
-
-                                <div class="small text-muted mb-1">
-                                    Lucky Ank
-                                </div>
-
-                                <div class="fw-semibold text-break">
-                                    {{ $luckyAnk !== '' ? $luckyAnk : 'Not configured' }}
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                        <div class="col-md-6">
-
-                            <div class="bg-white border rounded-3 p-3 h-100">
-
-                                <div class="small text-muted mb-1">
-                                    Final Ank
-                                </div>
-
-                                <div class="fw-semibold text-break">
-                                    {{ $finalAnk !== '' ? $finalAnk : 'Not configured' }}
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                {{-- Actions --}}
-                <div class="d-flex flex-wrap justify-content-end gap-2">
-
-                    <a
-                        href="{{ route('admin.dashboard') }}"
-                        class="btn btn-light border"
-                    >
-                        Cancel
-                    </a>
+                <div class="d-flex justify-content-end">
 
                     @can('lucky-numbers.update')
+
                         <button
                             type="submit"
                             class="btn btn-primary px-4"
                         >
                             Save Changes
                         </button>
+
                     @endcan
 
                 </div>
@@ -237,6 +224,54 @@
         </div>
 
     </div>
+
+
+    {{-- Manual Scrape --}}
+    @can('lucky-numbers.update')
+
+        <div class="card border-0 shadow-sm">
+
+            <div class="card-body p-4">
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+                    <div>
+
+                        <h5 class="fw-bold mb-1">
+                            🔄 Scrape Now
+                        </h5>
+
+                        <p class="text-muted mb-0">
+                            Immediately fetch the latest Lucky Ank and Final Ank.
+                        </p>
+
+                    </div>
+
+
+                    <form
+                        method="POST"
+                        action="{{ route('admin.lucky-numbers.scrape') }}"
+                    >
+
+                        @csrf
+
+                        <button
+                            type="submit"
+                            class="btn btn-outline-primary"
+                            {{ !$autoScrapeLucky ? 'disabled' : '' }}
+                        >
+                            Run Scraper
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    @endcan
 
 </div>
 

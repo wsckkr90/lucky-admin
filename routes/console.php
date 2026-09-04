@@ -9,6 +9,12 @@ Schedule::command(
 )
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+    Schedule::command(
+    'lucky-numbers:scrape'
+)
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');

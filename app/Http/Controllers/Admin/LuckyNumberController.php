@@ -3,48 +3,72 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Setting;
+use App\Services\LuckyNumberScraperService;
 use App\Services\SettingsService;
 use Illuminate\Http\Request;
 
 class LuckyNumberController extends Controller
 {
     public function __construct(
-        protected SettingsService $settingsService
+        protected SettingsService $settings,
+        protected LuckyNumberScraperService $scraper
     ) {
     }
 
-    /**
-     * Show Lucky Numbers configuration.
-     */
     public function index()
     {
-        $settings = Setting::query()
-            ->whereIn('key', [
-                'auto_scrape_lucky',
-                'lucky_ank',
-                'final_ank',
-            ])
-            ->get()
-            ->keyBy('key');
+        $autoScrapeLucky = (bool) $this->settings->get(
+            'auto_scrape_lucky',
+            true
+        );
 
-        return view('admin.lucky-numbers.index', [
-            'autoScrapeLucky' => filter_var(
-                $settings->get('auto_scrape_lucky')?->value ?? false,
-                FILTER_VALIDATE_BOOLEAN
-            ),
+        $luckyAnk = (string) $this->settings->get(
+            'lucky_ank',
+            '( 0-2-3-4 )'
+        );
 
-            'luckyAnk' => $settings->get('lucky_ank')?->value ?? '',
+        $finalAnk = (string) $this->settings->get(
+            'final_ank',
+            'K-0, M-8'
+        );
 
-            'finalAnk' => $settings->get('final_ank')?->value ?? '',
-        ]);
+        $targetUrl = (string) $this->settings->get(
+            'scraper.target_url',
+            ''
+        );
+
+        $lastRun = (string) $this->settings->get(
+            'lucky_scraper.last_run',
+            ''
+        );
+
+        $lastStatus = (string) $this->settings->get(
+            'lucky_scraper.last_status',
+            ''
+        );
+
+        $lastMessage = (string) $this->settings->get(
+            'lucky_scraper.last_message',
+            ''
+        );
+
+        return view(
+            'admin.lucky-numbers.index',
+            compact(
+                'autoScrapeLucky',
+                'luckyAnk',
+                'finalAnk',
+                'targetUrl',
+                'lastRun',
+                'lastStatus',
+                'lastMessage'
+            )
+        );
     }
 
-    /**
-     * Update Lucky Numbers configuration.
-     */
-    public function update(Request $request)
-    {
+    public function update(
+        Request $request
+    ) {
         $validated = $request->validate([
             'auto_scrape_lucky' => [
                 'nullable',
@@ -64,32 +88,74 @@ class LuckyNumberController extends Controller
             ],
         ]);
 
-        $this->settingsService->set(
+        $this->settings->set(
             'auto_scrape_lucky',
-            $request->boolean('auto_scrape_lucky'),
-            'boolean',
-            'results'
+            $request->boolean(
+                'auto_scrape_lucky'
+            ),
+            'results',
+            'boolean'
         );
 
-        $this->settingsService->set(
+        $this->settings->set(
             'lucky_ank',
             $validated['lucky_ank'] ?? '',
-            'string',
-            'results'
+            'results',
+            'string'
         );
 
-        $this->settingsService->set(
+        $this->settings->set(
             'final_ank',
             $validated['final_ank'] ?? '',
-            'string',
-            'results'
+            'results',
+            'string'
         );
 
         return redirect()
-            ->route('admin.lucky-numbers.index')
+            ->route(
+                'admin.lucky-numbers.index'
+            )
             ->with(
                 'success',
                 'Lucky Numbers settings updated successfully.'
+            );
+    }
+
+    public function scrapeNow()
+    {
+        $result = $this->scraper->scrape();
+
+        if (
+            ($result['skipped'] ?? false) === true
+        ) {
+            return redirect()
+                ->route(
+                    'admin.lucky-numbers.index'
+                )
+                ->with(
+                    'error',
+                    $result['message']
+                );
+        }
+
+        if (!$result['success']) {
+            return redirect()
+                ->route(
+                    'admin.lucky-numbers.index'
+                )
+                ->with(
+                    'error',
+                    $result['message']
+                );
+        }
+
+        return redirect()
+            ->route(
+                'admin.lucky-numbers.index'
+            )
+            ->with(
+                'success',
+                'Lucky Numbers scraped successfully.'
             );
     }
 }

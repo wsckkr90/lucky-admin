@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\LuckyNumberController;
 use App\Http\Controllers\Admin\ForumController;
 use App\Http\Controllers\Admin\CacheController;
 use App\Http\Controllers\Admin\SchedulerController;
+
 /*
 |--------------------------------------------------------------------------
 | Public Routes
@@ -229,14 +230,27 @@ Route::post(
 )
     ->middleware('permission:scheduler.run')
     ->name('scheduler.run');
-    
-Route::get('/lucky-numbers', [LuckyNumberController::class, 'index'])
+
+Route::get(
+    '/lucky-numbers',
+    [LuckyNumberController::class, 'index']
+)
     ->middleware('permission:lucky-numbers.view')
     ->name('lucky-numbers.index');
 
-Route::put('/lucky-numbers', [LuckyNumberController::class, 'update'])
+Route::put(
+    '/lucky-numbers',
+    [LuckyNumberController::class, 'update']
+)
     ->middleware('permission:lucky-numbers.update')
     ->name('lucky-numbers.update');
+
+Route::post(
+    '/lucky-numbers/scrape',
+    [LuckyNumberController::class, 'scrapeNow']
+)
+    ->middleware('permission:lucky-numbers.update')
+    ->name('lucky-numbers.scrape');
 // Blogs
 Route::get('/blogs', [BlogController::class, 'index'])
     ->middleware('permission:blogs.view')

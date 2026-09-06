@@ -41,19 +41,16 @@ class SeoManagerController extends Controller
     public function storeSite(Request $request)
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'domain' => ['required', 'string', 'max:255'],
-            'scheme' => ['required', 'in:http,https'],
-            'logo_url' => ['nullable', 'url', 'max:2048'],
-            'organization_name' => ['nullable', 'string', 'max:255'],
-            'same_as' => ['nullable', 'string', 'max:4000'],
+            'name' => ['required', 'string', 'max:120'], 'domain' => ['required', 'string', 'max:255'],
+            'scheme' => ['required', 'in:http,https'], 'logo_url' => ['nullable', 'url', 'max:2048'],
+            'organization_name' => ['nullable', 'string', 'max:255'], 'same_as' => ['nullable', 'string', 'max:4000'],
         ]);
         $data['domain'] = rtrim(preg_replace('#^https?://#i', '', trim($data['domain'])), '/');
         $data['same_as'] = $this->linesToArray($data['same_as'] ?? '');
         $data['active'] = true;
         $site = SeoSite::create($data);
         $this->ensureDefaultPages($site);
-        return redirect()->route('admin.seo.index', ['site' => $site->id])->with('success', 'Website added / वेबसाइट जोड़ी गई।');
+        return redirect()->route('admin.seo.manager.index', ['site' => $site->id])->with('success', 'Website added / वेबसाइट जोड़ी गई।');
     }
 
     public function savePage(Request $request, SeoPage $seoPage)
@@ -78,7 +75,7 @@ class SeoManagerController extends Controller
         }
 
         $seoPage->update($data);
-        return redirect()->route('admin.seo.index', ['site' => $seoPage->seo_site_id, 'page' => $seoPage->id])->with('success', 'SEO saved / SEO सेव हो गया।');
+        return redirect()->route('admin.seo.manager.index', ['site' => $seoPage->seo_site_id, 'page' => $seoPage->id])->with('success', 'SEO saved / SEO सेव हो गया।');
     }
 
     private function createDefaultSite(): SeoSite
@@ -86,13 +83,9 @@ class SeoManagerController extends Controller
         $url = config('app.url', 'https://lucky-sattaa.com');
         $parts = parse_url($url);
         return SeoSite::create([
-            'name' => config('app.name', 'Lucky Satta'),
-            'domain' => $parts['host'] ?? 'lucky-sattaa.com',
-            'scheme' => $parts['scheme'] ?? 'https',
-            'logo_url' => rtrim($url, '/') . '/logo.png',
-            'organization_name' => config('app.name', 'Lucky Satta'),
-            'same_as' => [],
-            'active' => true,
+            'name' => config('app.name', 'Lucky Satta'), 'domain' => $parts['host'] ?? 'lucky-sattaa.com',
+            'scheme' => $parts['scheme'] ?? 'https', 'logo_url' => rtrim($url, '/') . '/logo.png',
+            'organization_name' => config('app.name', 'Lucky Satta'), 'same_as' => [], 'active' => true,
         ]);
     }
 

@@ -4,120 +4,105 @@ import Alpine from 'alpinejs';
 window.Alpine = Alpine;
 Alpine.start();
 
+const SIDEBAR_STATE_KEY = 'lucky_admin_sidebar_state';
+
 function enableResultOnlyMode() {
     const path = window.location.pathname;
     if (!/\/admin\/(results|charts)(\/|$)/i.test(path)) return;
 
-    const blockedInputNames = new Set(['open_panna', 'jodi', 'close_panna']);
-    const hidden = (el) => {
-        const wrapper = el.closest('.col-md-3, .col-md-4, .col-md-6, .col-lg-2, .col-lg-3, .col, .form-group, td, th') || el.parentElement;
-        if (wrapper) wrapper.hidden = true;
+    const shouldHide = (text = '') => {
+        const value = text.trim().toLowerCase();
+        return value.includes('panna') || value === 'jodi' || value.includes('comment');
     };
 
     document.querySelectorAll('label').forEach((label) => {
-        const text = label.textContent.trim().toLowerCase();
-        if (text.includes('panna') || text === 'jodi' || text === 'comment' || text === 'comments') hidden(label);
+        if (shouldHide(label.textContent)) label.closest('.form-group, .col, .col-6, .col-md-3, .col-md-4, .col-md-6, .col-lg-2, .col-lg-3')?.classList.add('result-only-hidden');
     });
 
     document.querySelectorAll('input, textarea, select').forEach((field) => {
         const name = (field.getAttribute('name') || '').toLowerCase();
-        if (blockedInputNames.has(name) || name.includes('comment')) hidden(field);
+        if (name === 'open_panna' || name === 'jodi' || name === 'close_panna' || name.includes('comment')) {
+            field.closest('.form-group, .col, .col-6, .col-md-3, .col-md-4, .col-md-6, .col-lg-2, .col-lg-3')?.classList.add('result-only-hidden');
+        }
     });
 
     document.querySelectorAll('table').forEach((table) => {
-        const header = table.querySelector('thead tr:last-child');
-        if (!header) return;
+        const headerRow = table.querySelector('thead tr:last-child');
+        if (!headerRow) return;
         const blocked = new Set();
-        [...header.children].forEach((cell, index) => {
-            const text = cell.textContent.trim().toLowerCase();
-            if (text.includes('panna') || text === 'jodi' || text.includes('comment')) blocked.add(index);
+        [...headerRow.children].forEach((cell, index) => {
+            if (shouldHide(cell.textContent)) blocked.add(index);
         });
         table.querySelectorAll('tbody tr').forEach((row) => {
             [...row.children].forEach((cell, index) => {
-                if (cell.querySelector('input[name="open_panna"], input[name="jodi"], input[name="close_panna"], textarea[name*="comment" i]')) blocked.add(index);
+                if (shouldHide(cell.textContent) || cell.querySelector('input[name="open_panna"], input[name="jodi"], input[name="close_panna"], textarea[name*="comment" i]')) blocked.add(index);
             });
         });
         blocked.forEach((index) => {
-            header.children[index]?.setAttribute('hidden', 'hidden');
-            table.querySelectorAll('tbody tr').forEach((row) => row.children[index]?.setAttribute('hidden', 'hidden'));
+            headerRow.children[index]?.classList.add('result-only-hidden');
+            table.querySelectorAll('tbody tr').forEach((row) => row.children[index]?.classList.add('result-only-hidden'));
         });
     });
 }
 
-function enhanceSidebar() {
-    const sidebar = document.getElementById('adminSidebar');
-    if (!sidebar || sidebar.dataset.enhanced) return;
-    sidebar.dataset.enhanced = '1';
-
-    const sections = [...sidebar.querySelectorAll('.sidebar-section')];
-    const state = JSON.parse(localStorage.getItem('admin_sidebar_state') || '{}');
-
-    sections.forEach((section, index) => {
-        const title = section.textContent.trim();
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'sidebar-section-toggle';
-        button.innerHTML = `<span>${title}</span><span class="sidebar-chevron">⌄</span>`;
-
-        const menu = document.createElement('div');
-        menu.className = 'sidebar-submenu';
-        let cursor = section.nextElementSibling;
-        while (cursor && !cursor.classList.contains('sidebar-section')) {
-            const next = cursor.nextElementSibling;
-            menu.appendChild(cursor);
-            cursor = next;
-        }
-
-        section.replaceWith(button);
-        button.parentNode.insertBefore(menu, button.nextSibling);
-
-        const key = `${index}-${title}`;
-        const open = state[key] !== false;
-        menu.hidden = !open;
-        button.classList.toggle('collapsed', !open);
+function initSidebarGroups() {
+    document.querySelectorAll('.sidebar-group-toggle').forEach((button) => {
         button.addEventListener('click', () => {
-            const isOpen = menu.hidden;
-            menu.hidden = !isOpen;
-            button.classList.toggle('collapsed', !isOpen);
-            state[key] = isOpen;
-            localStorage.setItem('admin_sidebar_state', JSON.stringify(state));
+            const group = button.closest('.sidebar-group');
+            if (!group) return;
+            const key = group.dataset.sidebarGroup;
+            const open = !group.classList.contains('open');
+            group.classList.toggle('open', open);
+            button.setAttribute('aria-expanded', open ? 'true' : 'false');
+            try {
+                const state = JSON.parse(localStorage.getItem(SIDEBAR_STATE_KEY) || '{}');
+                state[key] = open;
+                localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(state));
+            } catch (_) {}
         });
     });
 
-    const path = window.location.pathname;
-    sidebar.querySelectorAll('a.sidebar-link.active').forEach((active) => {
-        const menu = active.closest('.sidebar-submenu');
-        const toggle = menu?.previousElementSibling;
-        if (menu && toggle) {
-            menu.hidden = false;
-            toggle.classList.remove('collapsed');
-        }
+    let state = {};
+    try { state = JSON.parse(localStorage.getItem(SIDEBAR_STATE_KEY) || '{}'); } catch (_) {}
+    document.querySelectorAll('.sidebar-group').forEach((group) => {
+        const key = group.dataset.sidebarGroup;
+        if (Object.prototype.hasOwnProperty.call(state, key) && state[key] === true) group.classList.add('open');
+        if (Object.prototype.hasOwnProperty.call(state, key) && state[key] === false && !group.querySelector('.sidebar-link.active')) group.classList.remove('open');
     });
 }
 
-function addLanguagePicker() {
-    const topbar = document.querySelector('.admin-topbar > div:last-child');
-    if (!topbar || document.getElementById('adminLanguage')) return;
-    const wrap = document.createElement('div');
-    wrap.className = 'd-flex align-items-center gap-2';
-    wrap.innerHTML = `<label class="small text-muted mb-0" for="adminLanguage">Lang</label><select id="adminLanguage" class="form-select form-select-sm" style="width:auto"><option value="en">English</option><option value="hi">हिन्दी</option></select>`;
-    topbar.prepend(wrap);
-    const select = wrap.querySelector('select');
-    const saved = localStorage.getItem('admin_locale') || 'en';
-    select.value = saved;
-    select.addEventListener('change', () => {
-        localStorage.setItem('admin_locale', select.value);
-        document.documentElement.lang = select.value === 'hi' ? 'hi' : 'en';
-        document.body.classList.toggle('admin-hindi', select.value === 'hi');
+function closeSidebarAfterNavigation() {
+    document.querySelectorAll('#adminSidebar a.sidebar-link').forEach((link) => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth <= 900) {
+                window.setTimeout(() => window.closeSidebar?.(), 40);
+            }
+        });
     });
-    document.documentElement.lang = saved === 'hi' ? 'hi' : 'en';
-    document.body.classList.toggle('admin-hindi', saved === 'hi');
+}
+
+function improveForms() {
+    document.querySelectorAll('input[type="date"], input[type="time"], input[type="datetime-local"]').forEach((input) => {
+        input.title = input.type === 'datetime-local' ? 'Select date and time / तारीख और समय चुनें' : 'Select / चुनें';
+    });
+
+    document.querySelectorAll('form').forEach((form) => {
+        form.addEventListener('submit', () => {
+            const submit = form.querySelector('button[type="submit"], input[type="submit"]');
+            if (!submit || submit.dataset.noLoading) return;
+            submit.dataset.originalText = submit.innerHTML;
+            submit.disabled = true;
+            submit.innerHTML = 'Saving… / सेव हो रहा है…';
+            window.setTimeout(() => { submit.disabled = false; submit.innerHTML = submit.dataset.originalText || 'Save'; }, 8000);
+        });
+    });
 }
 
 function initAdminUi() {
     enableResultOnlyMode();
-    enhanceSidebar();
-    addLanguagePicker();
+    initSidebarGroups();
+    closeSidebarAfterNavigation();
+    improveForms();
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initAdminUi, { once: true });

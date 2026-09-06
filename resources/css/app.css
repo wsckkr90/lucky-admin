@@ -1,3 +1,37 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Admin usability layer */
+.sidebar-section-toggle {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 16px 15px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    text-align: left;
+}
+.sidebar-section-toggle:hover { color: #fff; }
+.sidebar-chevron { transition: transform .18s ease; }
+.sidebar-section-toggle.collapsed .sidebar-chevron { transform: rotate(-90deg); }
+.sidebar-submenu { overflow: hidden; }
+.sidebar-submenu[hidden] { display: none !important; }
+.admin-sidebar { scrollbar-width: thin; }
+.admin-sidebar .sidebar-link { min-height: 42px; }
+.form-control, .form-select { min-height: 44px; border-radius: 10px; }
+textarea.form-control { min-height: 110px; }
+input[type="date"], input[type="time"], input[type="datetime-local"] { min-height: 46px; }
+@media (max-width: 767px) {
+    .admin-content { padding: 16px !important; }
+    .card-body { padding: 1rem !important; }
+    .table-responsive { -webkit-overflow-scrolling: touch; }
+    .btn-lg { width: 100%; }
+}

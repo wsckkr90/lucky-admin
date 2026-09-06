@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\SeoPage;
 use App\Models\SeoSite;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class SeoManagerController extends Controller
 {
@@ -24,13 +23,11 @@ class SeoManagerController extends Controller
     public function index(Request $request)
     {
         $sites = SeoSite::query()->with(['pages' => fn ($q) => $q->orderBy('id')])->orderBy('name')->get();
-
-        if ($sites->isEmpty()) {
-            $sites = collect([$this->createDefaultSite()]);
-        }
+        if ($sites->isEmpty()) $sites = collect([$this->createDefaultSite()]);
 
         foreach ($sites as $site) {
             $this->ensureDefaultPages($site);
+            $site->load(['pages' => fn ($q) => $q->orderBy('id')]);
         }
 
         $selectedSiteId = (int) ($request->integer('site') ?: $sites->first()->id);
@@ -51,69 +48,47 @@ class SeoManagerController extends Controller
             'organization_name' => ['nullable', 'string', 'max:255'],
             'same_as' => ['nullable', 'string', 'max:4000'],
         ]);
-
-        $data['domain'] = preg_replace('#^https?://#i', '', trim($data['domain']));
-        $data['domain'] = rtrim($data['domain'], '/');
+        $data['domain'] = rtrim(preg_replace('#^https?://#i', '', trim($data['domain'])), '/');
         $data['same_as'] = $this->linesToArray($data['same_as'] ?? '');
         $data['active'] = true;
-
         $site = SeoSite::create($data);
         $this->ensureDefaultPages($site);
-
         return redirect()->route('admin.seo.index', ['site' => $site->id])->with('success', 'Website added / वेबसाइट जोड़ी गई।');
     }
 
     public function savePage(Request $request, SeoPage $seoPage)
     {
         $data = $request->validate([
-            'label' => ['required', 'string', 'max:255'],
-            'path' => ['required', 'string', 'max:500'],
-            'meta_title' => ['nullable', 'string', 'max:255'],
-            'meta_description' => ['nullable', 'string', 'max:1000'],
-            'focus_keyword' => ['nullable', 'string', 'max:255'],
-            'secondary_keywords' => ['nullable', 'string', 'max:2000'],
-            'canonical_url' => ['nullable', 'url', 'max:2048'],
-            'robots' => ['required', 'string', 'max:100'],
-            'author' => ['nullable', 'string', 'max:255'],
-            'published_at' => ['nullable', 'date'],
-            'og_title' => ['nullable', 'string', 'max:255'],
-            'og_description' => ['nullable', 'string', 'max:1000'],
-            'og_image' => ['nullable', 'url', 'max:2048'],
-            'twitter_title' => ['nullable', 'string', 'max:255'],
-            'twitter_description' => ['nullable', 'string', 'max:1000'],
-            'twitter_image' => ['nullable', 'url', 'max:2048'],
-            'schema_type' => ['nullable', 'string', 'max:100'],
-            'schema_json' => ['nullable', 'string', 'max:20000'],
-            'extra_head' => ['nullable', 'string', 'max:40000'],
+            'label' => ['required', 'string', 'max:255'], 'path' => ['required', 'string', 'max:500'],
+            'meta_title' => ['nullable', 'string', 'max:255'], 'meta_description' => ['nullable', 'string', 'max:1000'],
+            'focus_keyword' => ['nullable', 'string', 'max:255'], 'secondary_keywords' => ['nullable', 'string', 'max:2000'],
+            'canonical_url' => ['nullable', 'url', 'max:2048'], 'robots' => ['required', 'string', 'max:100'],
+            'author' => ['nullable', 'string', 'max:255'], 'published_at' => ['nullable', 'date'],
+            'og_title' => ['nullable', 'string', 'max:255'], 'og_description' => ['nullable', 'string', 'max:1000'], 'og_image' => ['nullable', 'url', 'max:2048'],
+            'twitter_title' => ['nullable', 'string', 'max:255'], 'twitter_description' => ['nullable', 'string', 'max:1000'], 'twitter_image' => ['nullable', 'url', 'max:2048'],
+            'schema_type' => ['nullable', 'string', 'max:100'], 'schema_json' => ['nullable', 'string', 'max:20000'], 'extra_head' => ['nullable', 'string', 'max:40000'],
         ]);
 
         if (!empty($data['schema_json'])) {
             $decoded = json_decode($data['schema_json'], true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return back()->withInput()->withErrors(['schema_json' => 'Schema JSON is invalid / Schema JSON गलत है।']);
-            }
+            if (json_last_error() !== JSON_ERROR_NONE) return back()->withInput()->withErrors(['schema_json' => 'Schema JSON is invalid / Schema JSON गलत है।']);
             $data['schema_json'] = $decoded;
         } else {
             $data['schema_json'] = null;
         }
 
         $seoPage->update($data);
-
-        return redirect()->route('admin.seo.index', [
-            'site' => $seoPage->seo_site_id,
-            'page' => $seoPage->id,
-        ])->with('success', 'SEO saved / SEO सेव हो गया।');
+        return redirect()->route('admin.seo.index', ['site' => $seoPage->seo_site_id, 'page' => $seoPage->id])->with('success', 'SEO saved / SEO सेव हो गया।');
     }
 
     private function createDefaultSite(): SeoSite
     {
         $url = config('app.url', 'https://lucky-sattaa.com');
         $parts = parse_url($url);
-        $domain = $parts['host'] ?? 'lucky-sattaa.com';
         return SeoSite::create([
             'name' => config('app.name', 'Lucky Satta'),
-            'domain' => $domain,
-            'scheme' => ($parts['scheme'] ?? 'https'),
+            'domain' => $parts['host'] ?? 'lucky-sattaa.com',
+            'scheme' => $parts['scheme'] ?? 'https',
             'logo_url' => rtrim($url, '/') . '/logo.png',
             'organization_name' => config('app.name', 'Lucky Satta'),
             'same_as' => [],
@@ -124,24 +99,14 @@ class SeoManagerController extends Controller
     private function ensureDefaultPages(SeoSite $site): void
     {
         foreach (self::DEFAULT_PAGES as [$key, $label, $path]) {
-            SeoPage::firstOrCreate(
-                ['seo_site_id' => $site->id, 'page_key' => $key],
-                [
-                    'label' => $label,
-                    'path' => $path,
-                    'robots' => 'index,follow',
-                    'schema_type' => $key === 'home' ? 'WebSite' : 'WebPage',
-                ]
-            );
+            SeoPage::firstOrCreate(['seo_site_id' => $site->id, 'page_key' => $key], [
+                'label' => $label, 'path' => $path, 'robots' => 'index,follow', 'schema_type' => $key === 'home' ? 'WebSite' : 'WebPage',
+            ]);
         }
     }
 
     private function linesToArray(string $value): array
     {
-        return collect(preg_split('/\r\n|\r|\n/', $value))
-            ->map(fn ($line) => trim($line))
-            ->filter(fn ($line) => $line !== '')
-            ->values()
-            ->all();
+        return collect(preg_split('/\r\n|\r|\n/', $value))->map(fn ($line) => trim($line))->filter()->values()->all();
     }
 }

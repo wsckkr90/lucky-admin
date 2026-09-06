@@ -3,18 +3,20 @@
 use App\Http\Controllers\Admin\SeoManagerController;
 use Illuminate\Support\Facades\Route;
 
+/* Dedicated multi-site SEO manager. Kept separate from the older /admin/seo game SEO tools. */
 Route::middleware(['auth', 'admin'])
     ->prefix('admin')
     ->name('admin.seo.manager.')
     ->group(function () {
-        Route::get('/seo', [SeoManagerController::class, 'index'])
-            ->middleware('permission:seo.view');
+        Route::get('/seo-manager', [SeoManagerController::class, 'index'])
+            ->middleware('permission:seo.view')
+            ->name('index');
 
-        Route::post('/seo/sites', [SeoManagerController::class, 'storeSite'])
+        Route::post('/seo-manager/sites', [SeoManagerController::class, 'storeSite'])
             ->middleware('permission:seo.update')
             ->name('sites.store');
 
-        Route::put('/seo/pages/{seoPage}', [SeoManagerController::class, 'savePage'])
+        Route::put('/seo-manager/pages/{seoPage}', [SeoManagerController::class, 'savePage'])
             ->middleware('permission:seo.update')
             ->name('pages.save');
     });

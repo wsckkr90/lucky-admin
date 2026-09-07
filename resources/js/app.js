@@ -1,8 +1,4 @@
 import './bootstrap';
-import Alpine from 'alpinejs';
-
-window.Alpine = Alpine;
-Alpine.start();
 
 const SIDEBAR_STATE_KEY = 'lucky_admin_sidebar_state';
 
@@ -16,7 +12,9 @@ function enableResultOnlyMode() {
     };
 
     document.querySelectorAll('label').forEach((label) => {
-        if (shouldHide(label.textContent)) label.closest('.form-group, .col, .col-6, .col-md-3, .col-md-4, .col-md-6, .col-lg-2, .col-lg-3')?.classList.add('result-only-hidden');
+        if (shouldHide(label.textContent)) {
+            label.closest('.form-group, .col, .col-6, .col-md-3, .col-md-4, .col-md-6, .col-lg-2, .col-lg-3')?.classList.add('result-only-hidden');
+        }
     });
 
     document.querySelectorAll('input, textarea, select').forEach((field) => {
@@ -35,7 +33,9 @@ function enableResultOnlyMode() {
         });
         table.querySelectorAll('tbody tr').forEach((row) => {
             [...row.children].forEach((cell, index) => {
-                if (shouldHide(cell.textContent) || cell.querySelector('input[name="open_panna"], input[name="jodi"], input[name="close_panna"], textarea[name*="comment" i]')) blocked.add(index);
+                if (shouldHide(cell.textContent) || cell.querySelector('input[name="open_panna"], input[name="jodi"], input[name="close_panna"], textarea[name*="comment" i]')) {
+                    blocked.add(index);
+                }
             });
         });
         blocked.forEach((index) => {
@@ -93,17 +93,24 @@ function improveForms() {
             submit.dataset.originalText = submit.innerHTML;
             submit.disabled = true;
             submit.innerHTML = 'Saving… / सेव हो रहा है…';
-            window.setTimeout(() => { submit.disabled = false; submit.innerHTML = submit.dataset.originalText || 'Save'; }, 8000);
+            window.setTimeout(() => {
+                submit.disabled = false;
+                submit.innerHTML = submit.dataset.originalText || 'Save';
+            }, 8000);
         });
     });
 }
 
 function initAdminUi() {
+    if (!document.body.classList.contains('admin-body')) return;
     enableResultOnlyMode();
     initSidebarGroups();
     closeSidebarAfterNavigation();
     improveForms();
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initAdminUi, { once: true });
-else initAdminUi();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdminUi, { once: true });
+} else {
+    initAdminUi();
+}

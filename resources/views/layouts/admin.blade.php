@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#172554">
     <title>@yield('title', 'Admin Dashboard') - {{ config('app.name') }}</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>

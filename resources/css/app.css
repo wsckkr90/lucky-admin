@@ -145,6 +145,97 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--admin-primary)
 /* Date/time inputs get a calmer, beginner-friendly appearance. */
 input[type="date"], input[type="time"], input[type="datetime-local"] { cursor: pointer; }
 
+/* =========================================================
+   Flowbite-compatible Admin Component Layer
+   Applies a single visual language across all existing modules,
+   including older Bootstrap-style Blade markup.
+   ========================================================= */
+.admin-content .container-fluid { width: 100%; max-width: none; padding-left: 0; padding-right: 0; }
+.admin-content .row { --bs-gutter-x: 1.25rem; --bs-gutter-y: 1.25rem; }
+.admin-content .mb-4 { margin-bottom: 1.25rem !important; }
+.admin-content .card { box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 12px 30px rgba(15,23,42,.05); }
+.admin-content .card-header { padding: 1rem 1.25rem; }
+.admin-content .card-header h1, .admin-content .card-header h2, .admin-content .card-header h3, .admin-content .card-header h4, .admin-content .card-header h5, .admin-content .card-header h6 { margin-bottom: 0; font-weight: 800; }
+.admin-content .card-header .small { margin-top: .3rem; }
+.admin-content .card-body { padding: 1.25rem; }
+.admin-content .card-footer { border-top: 1px solid #eef2f7 !important; padding: 1rem 1.25rem; }
+
+/* Flowbite-like input group / search field treatment. */
+.admin-content .input-group { display: flex; align-items: stretch; width: 100%; }
+.admin-content .input-group > .form-control { min-width: 0; }
+.admin-content .input-group-text { display: flex; align-items: center; padding: 0 12px; border: 1px solid #dbe3ee; background: #f8fafc; color: #64748b; font-size: 12px; }
+.admin-content .input-group > :first-child { border-radius: 10px 0 0 10px; }
+.admin-content .input-group > :last-child { border-radius: 0 10px 10px 0; }
+
+/* Consistent native select chevron and checkbox/switch sizing. */
+.admin-content .form-select { appearance: auto; }
+.admin-content .form-check { display: flex; align-items: center; gap: .6rem; min-height: 42px; }
+.admin-content .form-check-input { width: 1.05rem; height: 1.05rem; margin: 0; }
+.admin-content .form-check-label { color: #334155; font-size: 12px; font-weight: 700; }
+
+/* Status colors for the Bootstrap utility names already used across modules. */
+.admin-content .bg-success { background: #dcfce7 !important; color: #166534 !important; }
+.admin-content .bg-secondary { background: #f1f5f9 !important; color: #475569 !important; }
+.admin-content .bg-primary { background: #dbeafe !important; color: #1d4ed8 !important; }
+.admin-content .bg-danger { background: #fee2e2 !important; color: #991b1b !important; }
+.admin-content .bg-warning { background: #fef3c7 !important; color: #92400e !important; }
+.admin-content .bg-info { background: #cffafe !important; color: #155e75 !important; }
+.admin-content .text-bg-success { background: #dcfce7 !important; color: #166534 !important; }
+.admin-content .text-bg-warning { background: #fef3c7 !important; color: #92400e !important; }
+.admin-content .text-bg-danger { background: #fee2e2 !important; color: #991b1b !important; }
+.admin-content .text-bg-primary { background: #dbeafe !important; color: #1d4ed8 !important; }
+.admin-content .text-bg-secondary { background: #f1f5f9 !important; color: #475569 !important; }
+.admin-content .text-dark { color: #334155 !important; }
+
+/* Legacy alert markup becomes the same polished component used by the shell. */
+.admin-content .alert { position: relative; margin-bottom: 18px; padding: 13px 15px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 13px; box-shadow: var(--admin-shadow); }
+.admin-content .alert-success { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+.admin-content .alert-danger { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+.admin-content .alert-warning { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.admin-content .alert-info { background: #ecfeff; border-color: #a5f3fc; color: #155e75; }
+.admin-content .alert .btn-close { position: absolute; top: .8rem; right: .8rem; }
+
+/* Pagination: make Laravel's generated links look like a proper UI component. */
+.admin-content .pagination { display: flex; flex-wrap: wrap; gap: 5px; padding-left: 0; margin: 0; list-style: none; }
+.admin-content .pagination .page-item { display: inline-flex; }
+.admin-content .pagination .page-link { min-width: 38px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0 10px; border: 1px solid #dbe3ee; border-radius: 9px; background: #fff; color: #475569; font-size: 12px; font-weight: 800; text-decoration: none; }
+.admin-content .pagination .page-link:hover { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+.admin-content .pagination .page-item.active .page-link { background: var(--admin-primary); border-color: var(--admin-primary); color: #fff; }
+.admin-content .pagination .page-item.disabled .page-link { opacity: .5; pointer-events: none; }
+
+/* Tables: sticky header, cleaner density, responsive action wrapping. */
+.admin-content .table-responsive { box-shadow: 0 1px 2px rgba(15,23,42,.03); }
+.admin-content .table thead th { position: sticky; top: 0; z-index: 1; }
+.admin-content .table td .btn { margin: 2px 0; }
+.admin-content .table .text-end .btn { white-space: nowrap; }
+
+/* Consistent page intro/header hierarchy across CRUD screens. */
+.admin-content > .d-flex:first-child h1,
+.admin-content > .d-flex:first-child h2,
+.admin-content > .d-flex:first-child h3,
+.admin-content > .d-flex:first-child h4 { margin-bottom: .35rem !important; font-weight: 800; }
+.admin-content > .d-flex:first-child > div:first-child > .small.text-muted:first-child { font-size: 10px; letter-spacing: .08em; font-weight: 900; text-transform: uppercase; }
+
+/* Flowbite-style focus/accessibility ring. */
+.admin-content button:focus-visible,
+.admin-content a:focus-visible,
+.admin-content input:focus-visible,
+.admin-content select:focus-visible,
+.admin-content textarea:focus-visible { outline: 0; box-shadow: 0 0 0 4px rgba(59,130,246,.12); }
+
+/* Avoid oversized controls on compact screens. */
+.admin-content .btn-sm { min-height: 34px; padding: 6px 10px; border-radius: 8px !important; font-size: 11px; }
+.admin-content .form-select-lg, .admin-content .form-control-lg { min-height: 48px; border-radius: 10px; font-size: 13px; }
+
+/* Mobile CRUD ergonomics. */
+@media (max-width: 768px) {
+    .admin-content .card-header, .admin-content .card-body, .admin-content .card-footer { padding: 1rem; }
+    .admin-content .table-responsive { margin-left: -1px; margin-right: -1px; }
+    .admin-content .page-actions .btn { width: 100%; }
+    .admin-content .d-flex.justify-content-between { align-items: flex-start !important; }
+    .admin-content .pagination .page-link { min-width: 36px; min-height: 36px; }
+}
+
 @media (max-width: 1199px) {
     .admin-main { margin-left: 248px; }
     .admin-sidebar { width: 248px; }

@@ -82,8 +82,11 @@ body.sidebar-open { overflow: hidden; }
 .admin-alert { margin-bottom: 18px; padding: 13px 15px; border: 1px solid transparent; border-radius: 12px; font-size: 13px; box-shadow: var(--admin-shadow); }
 .admin-alert-success { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
 .admin-alert-danger { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+.admin-alert button[data-dismiss-target] { border: 0; background: transparent; color: inherit; opacity: .65; cursor: pointer; }
+.admin-alert button[data-dismiss-target]:hover { opacity: 1; }
 
 /* Make existing Bootstrap-style cards/forms consistent even when Bootstrap itself is not present. */
+.admin-card { border: 1px solid var(--admin-border); border-radius: var(--admin-radius); background: var(--admin-card); box-shadow: var(--admin-shadow); }
 .card { border: 1px solid var(--admin-border) !important; border-radius: var(--admin-radius) !important; background: var(--admin-card); box-shadow: var(--admin-shadow); overflow: hidden; }
 .card-header { background: #fff !important; border-bottom: 1px solid #eef2f7 !important; }
 .card-body { background: #fff; }
@@ -128,6 +131,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--admin-primary)
 .empty-state { padding: 40px 20px; text-align: center; color: #64748b; }
 .empty-state strong { display: block; margin-bottom: 5px; color: #334155; }
 .filter-bar { padding: 14px; border: 1px solid var(--admin-border); border-radius: 12px; background: #fff; box-shadow: var(--admin-shadow); }
+
+/* Blog editor / upload controls. */
+.blog-cover-upload input:focus + label { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,.10); }
+.blog-cover-upload label { min-height: 180px; }
+.blog-cover-upload img { display: block; width: 100%; }
 
 .position-sticky { position: sticky; }
 

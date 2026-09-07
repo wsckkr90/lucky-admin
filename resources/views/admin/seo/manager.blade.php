@@ -27,13 +27,13 @@
         <h2 class="mb-1">SEO Manager / SEO प्रबंधक</h2>
         <p class="text-muted mb-0">1. Website चुनें → 2. Public Page चुनें → 3. SEO भरें → 4. Save करें</p>
     </div>
-    <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addWebsite" aria-expanded="false">＋ Add Website / वेबसाइट जोड़ें</button>
+    <button class="btn btn-primary" type="button" data-collapse-toggle="addWebsite" aria-expanded="false" aria-controls="addWebsite">＋ Add Website / वेबसाइट जोड़ें</button>
 </div>
 
 @if(session('success')) <div class="admin-alert admin-alert-success">{{ session('success') }}</div> @endif
 @if($errors->any()) <div class="admin-alert admin-alert-danger">{{ $errors->first() }}</div> @endif
 
-<div class="collapse mb-4" id="addWebsite">
+<div class="collapse hidden mb-4" id="addWebsite">
     <div class="card">
         <div class="card-header p-4">
             <h5 class="mb-1">Add Website / नई वेबसाइट</h5>

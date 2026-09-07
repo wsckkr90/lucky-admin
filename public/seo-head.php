@@ -24,17 +24,40 @@ $site = null;
 try {
     if (function_exists('ls_pdo')) {
         $pdo = ls_pdo();
-        $siteStmt = $pdo->prepare('SELECT * FROM seo_sites WHERE active = 1 AND LOWER(domain) = LOWER(?) LIMIT 1');
+
+        // Keep the domain lookup index-friendly. The host is normalized first,
+        // so LOWER(domain) is unnecessary and would make a normal index harder
+        // for MySQL/MariaDB to use.
+        $siteStmt = $pdo->prepare(
+            'SELECT id, name, domain, scheme, logo_url, organization_name, same_as
+             FROM seo_sites
+             WHERE active = 1 AND domain = ?
+             LIMIT 1'
+        );
         $siteStmt->execute([$host]);
         $site = $siteStmt->fetch(PDO::FETCH_ASSOC) ?: null;
 
         if (!$site) {
-            $siteStmt = $pdo->query('SELECT * FROM seo_sites WHERE active = 1 ORDER BY id LIMIT 1');
+            $siteStmt = $pdo->query(
+                'SELECT id, name, domain, scheme, logo_url, organization_name, same_as
+                 FROM seo_sites
+                 WHERE active = 1
+                 ORDER BY id
+                 LIMIT 1'
+            );
             $site = $siteStmt?->fetch(PDO::FETCH_ASSOC) ?: null;
         }
 
         if ($site) {
-            $stmt = $pdo->prepare('SELECT * FROM seo_pages WHERE seo_site_id = ? AND page_key = ? LIMIT 1');
+            $stmt = $pdo->prepare(
+                'SELECT meta_title, meta_description, focus_keyword, secondary_keywords,
+                        canonical_url, robots, author, og_title, og_description, og_image,
+                        twitter_title, twitter_description, twitter_image, schema_type,
+                        schema_json, extra_head
+                 FROM seo_pages
+                 WHERE seo_site_id = ? AND page_key = ?
+                 LIMIT 1'
+            );
             $stmt->execute([(int)$site['id'], $seoPageKey]);
             $seo = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
         }

@@ -7,136 +7,53 @@ use App\Models\ChartWeek;
 use App\Models\Game;
 use App\Models\GameResult;
 use App\Services\SeoService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class ChartController extends Controller
 {
-    /**
-     * Public chart controller.
-     *
-     * Supported URLs:
-     *
-     * /chart
-     * /chart/disawer
-     * /chart/disawer/2026
-     * /chart/disawer/2026/8
-     *
-     * Legacy:
-     *
-     * /chart.php
-     * /chart.php?game=disawer
-     * /chart.php?game=disawer&year=2026
-     */
     public function __construct(
         protected SeoService $seoService
     ) {
     }
 
-    /**
-     * Main chart page.
-     */
     public function index(
         Request $request,
         ?string $game = null,
         ?int $year = null,
         ?int $month = null
     ) {
-        /*
-        |--------------------------------------------------------------------------
-        | Resolve month
-        |--------------------------------------------------------------------------
-        */
-
         $requestedMonth = $month;
-
         if ($requestedMonth === null && $request->filled('month')) {
             $requestedMonth = (int) $request->query('month');
         }
 
-        if (
-            $requestedMonth !== null &&
-            (
-                $requestedMonth < 1 ||
-                $requestedMonth > 12
-            )
-        ) {
+        if ($requestedMonth !== null && ($requestedMonth < 1 || $requestedMonth > 12)) {
             abort(404);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Resolve game
-        |--------------------------------------------------------------------------
-        |
-        | Path parameter has priority over query parameter.
-        |--------------------------------------------------------------------------
-        */
-
         $gameKey = $game;
-
-        if (
-            ($gameKey === null || $gameKey === '') &&
-            $request->filled('game')
-        ) {
+        if (($gameKey === null || $gameKey === '') && $request->filled('game')) {
             $gameKey = $request->query('game');
         }
 
-        $gameKey = strtolower(
-            trim((string) $gameKey)
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Keep only safe slug characters.
-        |--------------------------------------------------------------------------
-        */
-
-        $gameKey = preg_replace(
-            '/[^a-z0-9-]/',
-            '',
-            $gameKey
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | /chart
-        |--------------------------------------------------------------------------
-        |
-        | No game means yearly chart index.
-        |--------------------------------------------------------------------------
-        */
+        $gameKey = preg_replace('/[^a-z0-9-]/', '', strtolower(trim((string) $gameKey)));
 
         if ($gameKey === '') {
             return $this->yearlyIndex();
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Find game
-        |--------------------------------------------------------------------------
-        */
-
         $gameModel = Game::query()
             ->where(function ($query) use ($gameKey) {
-                $query
-                    ->where(
-                        'legacy_id',
-                        $gameKey
-                    )
-                    ->orWhere(
-                        'slug',
-                        $gameKey
-                    );
+                $query->where('legacy_id', $gameKey)->orWhere('slug', $gameKey);
             })
-            ->where(
-                'active',
-                true
-            )
+            ->where('active', true)
             ->with([
-                'city',
+                'city:id,name',
                 'seoMeta',
-                'seoContents',
-                'faqs',
+                'seoContents' => fn ($query) => $query->where('active', true)->orderBy('sort_order')->orderBy('id'),
+                'faqs' => fn ($query) => $query->where('active', true)->orderBy('sort_order')->orderBy('id'),
             ])
             ->first();
 
@@ -144,88 +61,11 @@ class ChartController extends Controller
             abort(404);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Current year
-        |--------------------------------------------------------------------------
-        */
-
         $currentYear = now()->year;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Available years
-        |--------------------------------------------------------------------------
-        |
-        | IMPORTANT:
-        |
-        | Historical chart years should come from chart_weeks,
-        | while current/live result years can come from game_results.
-        |
-        | We merge both sources so the chart index remains complete.
-        |--------------------------------------------------------------------------
-        */
-
-        $chartYears = ChartWeek::query()
-            ->where(
-                'game_id',
-                $gameModel->id
-            )
-            ->selectRaw(
-                'YEAR(week_start) AS year'
-            )
-            ->distinct()
-            ->pluck('year')
-            ->map(
-                fn ($value) => (int) $value
-            )
-            ->filter(
-                fn ($value) => $value > 0
-            )
-            ->toArray();
-
-        $resultYears = GameResult::query()
-            ->where(
-                'game_id',
-                $gameModel->id
-            )
-            ->selectRaw(
-                'YEAR(result_date) AS year'
-            )
-            ->distinct()
-            ->pluck('year')
-            ->map(
-                fn ($value) => (int) $value
-            )
-            ->filter(
-                fn ($value) => $value > 0
-            )
-            ->toArray();
-
-        $availableYears = array_values(
-            array_unique(
-                array_merge(
-                    $chartYears,
-                    $resultYears,
-                    [$currentYear]
-                )
-            )
-        );
-
-        rsort($availableYears);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Resolve selected year
-        |--------------------------------------------------------------------------
-        */
+        $availableYears = $this->availableYearsForGame($gameModel->id, $currentYear);
 
         $requestedYear = $year;
-
-        if (
-            $requestedYear === null &&
-            $request->filled('year')
-        ) {
+        if ($requestedYear === null && $request->filled('year')) {
             $requestedYear = (int) $request->query('year');
         }
 
@@ -233,419 +73,161 @@ class ChartController extends Controller
             $requestedYear = $currentYear;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Invalid year falls back to current year.
-        |--------------------------------------------------------------------------
-        */
+        $selectedYear = in_array($requestedYear, $availableYears, true)
+            ? $requestedYear
+            : $currentYear;
 
-        if (
-            !in_array(
-                $requestedYear,
-                $availableYears,
-                true
-            )
-        ) {
-            $selectedYear = $currentYear;
-        } else {
-            $selectedYear = $requestedYear;
-        }
+        // Use sargable date ranges so MySQL/MariaDB can use date indexes.
+        $rangeStart = $requestedMonth !== null
+            ? Carbon::create($selectedYear, $requestedMonth, 1)->startOfDay()
+            : Carbon::create($selectedYear, 1, 1)->startOfDay();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Historical chart entries
-        |--------------------------------------------------------------------------
-        |
-        | This is the important migration:
-        |
-        | OLD:
-        | daily_results.json
-        |
-        | NEW:
-        | chart_entries
-        |
-        |--------------------------------------------------------------------------
-        */
+        $rangeEnd = $requestedMonth !== null
+            ? Carbon::create($selectedYear, $requestedMonth, 1)->endOfMonth()->endOfDay()
+            : Carbon::create($selectedYear, 12, 31)->endOfDay();
 
-        $chartEntriesQuery = ChartEntry::query()
-            ->whereHas(
-                'week',
-                function ($query) use ($gameModel) {
-                    $query->where(
-                        'game_id',
-                        $gameModel->id
-                    );
-                }
-            )
-            ->whereYear(
-                'result_date',
-                $selectedYear
-            )
-            ->orderBy(
-                'result_date'
-            );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Optional month filter
-        |--------------------------------------------------------------------------
-        */
-
-        if ($requestedMonth !== null) {
-            $chartEntriesQuery->whereMonth(
-                'result_date',
-                $requestedMonth
-            );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Key by date for O(1) Blade lookup.
-        |--------------------------------------------------------------------------
-        */
-
-        $chartEntries = $chartEntriesQuery
+        $chartEntries = ChartEntry::query()
+            ->select('chart_entries.*')
+            ->join('chart_weeks', 'chart_weeks.id', '=', 'chart_entries.chart_week_id')
+            ->where('chart_weeks.game_id', $gameModel->id)
+            ->whereBetween('chart_entries.result_date', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
+            ->orderBy('chart_entries.result_date')
             ->get()
-            ->keyBy(function ($entry) {
-                return $entry->result_date
-                    ->format('Y-m-d');
-            });
+            ->keyBy(fn ($entry) => $entry->result_date->format('Y-m-d'));
 
-        /*
-        |--------------------------------------------------------------------------
-        | Current/live results
-        |--------------------------------------------------------------------------
-        |
-        | Keep game_results available separately.
-        | This is useful for today's/current result data.
-        |--------------------------------------------------------------------------
-        */
-
-        $liveResultsQuery = GameResult::query()
-            ->where(
-                'game_id',
-                $gameModel->id
-            )
-            ->whereYear(
-                'result_date',
-                $selectedYear
-            )
-            ->orderBy(
-                'result_date'
-            );
-
-        if ($requestedMonth !== null) {
-            $liveResultsQuery->whereMonth(
-                'result_date',
-                $requestedMonth
-            );
-        }
-
-        $liveResults = $liveResultsQuery
+        // Live results stay uncached so a newly published result appears immediately.
+        $liveResults = GameResult::query()
+            ->where('game_id', $gameModel->id)
+            ->whereBetween('result_date', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
+            ->orderBy('result_date')
             ->get()
-            ->keyBy(function ($result) {
-                return $result->result_date
-                    ->format('Y-m-d');
-            });
+            ->keyBy(fn ($result) => $result->result_date->format('Y-m-d'));
 
-        /*
-        |--------------------------------------------------------------------------
-        | SEO
-        |--------------------------------------------------------------------------
-        |
-        | Explicit admin SEO always wins.
-        | Otherwise SeoService generates sensible defaults.
-        |--------------------------------------------------------------------------
-        */
-
-        $chartUrl = route(
-            'chart.game',
-            [
-                'game' =>
-                    $gameModel->legacy_id
-                    ?: $gameModel->slug,
-
-                'year' =>
-                    $selectedYear,
-            ]
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Month-specific canonical
-        |--------------------------------------------------------------------------
-        */
+        $chartUrl = route('chart.game', [
+            'game' => $gameModel->legacy_id ?: $gameModel->slug,
+            'year' => $selectedYear,
+        ]);
 
         if ($requestedMonth !== null) {
-            $chartUrl = route(
-                'chart.month',
-                [
-                    'game' =>
-                        $gameModel->legacy_id
-                        ?: $gameModel->slug,
-
-                    'year' =>
-                        $selectedYear,
-
-                    'month' =>
-                        $requestedMonth,
-                ]
-            );
+            $chartUrl = route('chart.month', [
+                'game' => $gameModel->legacy_id ?: $gameModel->slug,
+                'year' => $selectedYear,
+                'month' => $requestedMonth,
+            ]);
         }
 
-        $seo = $this->seoService->forModel(
-            $gameModel,
-            [
-                'title' =>
-                    $gameModel->name .
-                    ' Result & Chart ' .
-                    $selectedYear,
+        $seo = $this->seoService->forModel($gameModel, [
+            'title' => $gameModel->name . ' Result & Chart ' . $selectedYear,
+            'description' => 'View ' . $gameModel->name . ' result and historical chart for ' . $selectedYear . '.',
+            'canonical' => $chartUrl,
+            'schema_type' => 'WebPage',
+        ]);
 
-                'description' =>
-                    'View ' .
-                    $gameModel->name .
-                    ' result and historical chart for ' .
-                    $selectedYear .
-                    '.',
-
-                'canonical' =>
-                    $chartUrl,
-
-                'schema_type' =>
-                    'WebPage',
-            ]
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Render
-        |--------------------------------------------------------------------------
-        */
-
-        return view(
-            'public.chart',
-            [
-                'game' =>
-                    $gameModel,
-
-                /*
-                |--------------------------------------------------------------------------
-                | Historical chart records
-                |--------------------------------------------------------------------------
-                */
-
-                'chartEntries' =>
-                    $chartEntries,
-
-                /*
-                |--------------------------------------------------------------------------
-                | Live/current result records
-                |--------------------------------------------------------------------------
-                */
-
-                'liveResults' =>
-                    $liveResults,
-
-                /*
-                |--------------------------------------------------------------------------
-                | Backward-compatible variable.
-                |
-                | Remove later after chart.blade.php is fully migrated.
-                |--------------------------------------------------------------------------
-                */
-
-                'results' =>
-                    $liveResults,
-
-                'availableYears' =>
-                    $availableYears,
-
-                'selectedYear' =>
-                    $selectedYear,
-
-                'selectedMonth' =>
-                    $requestedMonth,
-
-                'currentYear' =>
-                    $currentYear,
-
-                'currentMonth' =>
-                    now()->month,
-
-                'currentDay' =>
-                    now()->day,
-
-                'months' =>
-                    $this->months(),
-
-                'seo' =>
-                    $seo,
-            ]
-        );
+        return view('public.chart', [
+            'game' => $gameModel,
+            'chartEntries' => $chartEntries,
+            'liveResults' => $liveResults,
+            'results' => $liveResults,
+            'availableYears' => $availableYears,
+            'selectedYear' => $selectedYear,
+            'selectedMonth' => $requestedMonth,
+            'currentYear' => $currentYear,
+            'currentMonth' => now()->month,
+            'currentDay' => now()->day,
+            'months' => $this->months(),
+            'seo' => $seo,
+        ]);
     }
 
-    /**
-     * Yearly chart index.
-     */
     protected function yearlyIndex()
     {
         $games = Game::query()
-            ->with('city')
-            ->where(
-                'active',
-                true
-            )
-            ->orderBy(
-                'display_order'
-            )
-            ->orderBy(
-                'name'
-            )
+            ->select(['id', 'city_id', 'name', 'slug', 'legacy_id', 'display_order', 'active'])
+            ->with('city:id,name')
+            ->where('active', true)
+            ->orderBy('display_order')
+            ->orderBy('name')
             ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Historical years
-        |--------------------------------------------------------------------------
-        */
+        // Year lists change rarely compared with live result rows, so keep only
+        // this small metadata cache for a few minutes.
+        $availableYears = Cache::remember('public:chart:available-years', now()->addMinutes(5), function () {
+            $years = ChartWeek::query()
+                ->selectRaw('YEAR(week_start) AS year')
+                ->distinct()
+                ->pluck('year')
+                ->map(fn ($year) => (int) $year)
+                ->filter(fn ($year) => $year > 0)
+                ->toArray();
 
-        $chartYears = ChartWeek::query()
-            ->selectRaw(
-                'YEAR(week_start) AS year'
-            )
-            ->distinct()
-            ->pluck('year')
-            ->map(
-                fn ($year) => (int) $year
-            )
-            ->filter(
-                fn ($year) => $year > 0
-            )
-            ->toArray();
+            $years = array_merge($years, GameResult::query()
+                ->selectRaw('YEAR(result_date) AS year')
+                ->distinct()
+                ->pluck('year')
+                ->map(fn ($year) => (int) $year)
+                ->filter(fn ($year) => $year > 0)
+                ->toArray());
 
-        /*
-        |--------------------------------------------------------------------------
-        | Live result years
-        |--------------------------------------------------------------------------
-        */
+            $years[] = now()->year;
+            $years = array_values(array_unique($years));
+            rsort($years);
 
-        $resultYears = GameResult::query()
-            ->selectRaw(
-                'YEAR(result_date) AS year'
-            )
-            ->distinct()
-            ->pluck('year')
-            ->map(
-                fn ($year) => (int) $year
-            )
-            ->filter(
-                fn ($year) => $year > 0
-            )
-            ->toArray();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Merge + current year.
-        |--------------------------------------------------------------------------
-        */
-
-        $availableYears = array_values(
-            array_unique(
-                array_merge(
-                    $chartYears,
-                    $resultYears,
-                    [
-                        now()->year,
-                    ]
-                )
-            )
-        );
-
-        rsort($availableYears);
-
-        /*
-        |--------------------------------------------------------------------------
-        | SEO
-        |--------------------------------------------------------------------------
-        */
+            return $years;
+        });
 
         $seo = [
-            'title' =>
-                'Satta Chart - Yearly Historical Results',
-
-            'description' =>
-                'Browse yearly satta charts and historical results for all available games.',
-
-            'focus_keyword' =>
-                'satta chart',
-
-            'secondary_keywords' =>
-                'satta result chart, historical satta chart',
-
-            'canonical' =>
-                route('chart'),
-
-            'robots' =>
-                'index,follow',
-
-            'og_title' =>
-                'Satta Chart - Yearly Historical Results',
-
-            'og_description' =>
-                'Browse yearly satta charts and historical results for all available games.',
-
-            'og_image' =>
-                null,
-
-            'twitter_title' =>
-                'Satta Chart - Yearly Historical Results',
-
-            'twitter_description' =>
-                'Browse yearly satta charts and historical results for all available games.',
-
-            'twitter_image' =>
-                null,
-
-            'schema_type' =>
-                'WebPage',
-
-            'schema_json' =>
-                null,
+            'title' => 'Satta Chart - Yearly Historical Results',
+            'description' => 'Browse yearly satta charts and historical results for all available games.',
+            'focus_keyword' => 'satta chart',
+            'secondary_keywords' => 'satta result chart, historical satta chart',
+            'canonical' => route('chart'),
+            'robots' => 'index,follow',
+            'og_title' => 'Satta Chart - Yearly Historical Results',
+            'og_description' => 'Browse yearly satta charts and historical results for all available games.',
+            'og_image' => null,
+            'twitter_title' => 'Satta Chart - Yearly Historical Results',
+            'twitter_description' => 'Browse yearly satta charts and historical results for all available games.',
+            'twitter_image' => null,
+            'schema_type' => 'WebPage',
+            'schema_json' => null,
         ];
 
-        return view(
-            'public.chart-index',
-            [
-                'games' =>
-                    $games,
-
-                'availableYears' =>
-                    $availableYears,
-
-                'seo' =>
-                    $seo,
-            ]
-        );
+        return view('public.chart-index', compact('games', 'availableYears', 'seo'));
     }
 
-    /**
-     * Month names.
-     */
+    protected function availableYearsForGame(int $gameId, int $currentYear): array
+    {
+        return Cache::remember("public:chart:years:{$gameId}", now()->addMinutes(5), function () use ($gameId, $currentYear) {
+            $chartYears = ChartWeek::query()
+                ->where('game_id', $gameId)
+                ->selectRaw('YEAR(week_start) AS year')
+                ->distinct()
+                ->pluck('year')
+                ->map(fn ($year) => (int) $year)
+                ->filter(fn ($year) => $year > 0)
+                ->toArray();
+
+            $resultYears = GameResult::query()
+                ->where('game_id', $gameId)
+                ->selectRaw('YEAR(result_date) AS year')
+                ->distinct()
+                ->pluck('year')
+                ->map(fn ($year) => (int) $year)
+                ->filter(fn ($year) => $year > 0)
+                ->toArray();
+
+            $years = array_values(array_unique(array_merge($chartYears, $resultYears, [$currentYear])));
+            rsort($years);
+
+            return $years;
+        });
+    }
+
     protected function months(): array
     {
         return [
-            'January',
-            'February',
-            'March',
-            'April',
-            'May',
-            'June',
-            'July',
-            'August',
-            'September',
-            'October',
-            'November',
-            'December',
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December',
         ];
     }
 }

@@ -7,8 +7,8 @@
 
     @include('partials.seo.head')
 
-    {{-- Public pages do not need the admin interaction bundle. --}}
-    @vite(['resources/css/app.css'])
+    {{-- Public pages use a dedicated lightweight CSS bundle instead of the full admin stylesheet. --}}
+    @vite(['resources/css/public.css'])
 
     @stack('head')
 </head>

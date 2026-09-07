@@ -6,15 +6,29 @@ use App\Http\Controllers\Controller;
 use App\Models\Blog;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class BlogController extends Controller
 {
     public function index(Request $request)
     {
-        $blogs = Blog::with('author')
+        $blogs = Blog::query()
+            ->select([
+                'id',
+                'title',
+                'slug',
+                'excerpt',
+                'author_id',
+                'cover_image',
+                'status',
+                'featured',
+                'published_at',
+                'created_at',
+            ])
+            ->with('author:id,name')
             ->when($request->filled('search'), function ($query) use ($request) {
-                $search = $request->input('search');
+                $search = trim($request->input('search'));
 
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', "%{$search}%")
@@ -55,6 +69,9 @@ class BlogController extends Controller
 
         $validated['author_id'] = $validated['author_id'] ?? auth()->id();
         $validated['featured'] = $request->boolean('featured');
+        $validated['cover_image'] = $request->hasFile('cover_image')
+            ? $request->file('cover_image')->store('blog-covers', 'public')
+            : null;
 
         if ($validated['status'] === 'published') {
             $validated['published_at'] =
@@ -90,6 +107,17 @@ class BlogController extends Controller
 
         $validated['featured'] = $request->boolean('featured');
 
+        if ($request->boolean('remove_cover_image') && $blog->cover_image) {
+            $this->deleteCoverImage($blog->cover_image);
+            $validated['cover_image'] = null;
+        } elseif ($request->hasFile('cover_image')) {
+            $this->deleteCoverImage($blog->cover_image);
+            $validated['cover_image'] = $request->file('cover_image')
+                ->store('blog-covers', 'public');
+        } else {
+            unset($validated['cover_image']);
+        }
+
         if ($validated['status'] === 'published') {
             $validated['published_at'] =
                 $validated['published_at']
@@ -108,6 +136,7 @@ class BlogController extends Controller
 
     public function destroy(Blog $blog)
     {
+        $this->deleteCoverImage($blog->cover_image);
         $blog->delete();
 
         return back()->with(
@@ -194,8 +223,14 @@ class BlogController extends Controller
 
             'cover_image' => [
                 'nullable',
-                'string',
-                'max:255',
+                'image',
+                'mimes:jpeg,jpg,png,webp',
+                'max:4096',
+            ],
+
+            'remove_cover_image' => [
+                'nullable',
+                'boolean',
             ],
 
             'status' => [
@@ -213,6 +248,15 @@ class BlogController extends Controller
                 'date',
             ],
         ]);
+    }
+
+    private function deleteCoverImage(?string $path): void
+    {
+        if (!$path || filter_var($path, FILTER_VALIDATE_URL)) {
+            return;
+        }
+
+        Storage::disk('public')->delete($path);
     }
 
     private function uniqueSlug(

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\SeoPage;
 use App\Models\SeoSite;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 
@@ -18,31 +19,38 @@ class SeoService
     {
         $site = $this->resolveSite();
         $key = $pageKey ?: $this->pageKeyFromRequest();
-        $page = $site?->pages()->where('page_key', $key)->first();
+        $host = strtolower((string) request()->getHost());
+        $cacheKey = 'seo:page:' . sha1($host . '|' . $site?->id . '|' . $key);
 
-        if (!$page) {
-            return $this->normalize(null, [
-                'title' => Config::get('app.name', 'Website'),
-                'description' => 'Latest updates, results and information.',
-                'canonical' => url()->current(),
+        return Cache::remember($cacheKey, now()->addMinutes(2), function () use ($site, $key) {
+            $page = $site?->pages()
+                ->where('page_key', $key)
+                ->first();
+
+            if (!$page) {
+                return $this->normalize(null, [
+                    'title' => Config::get('app.name', 'Website'),
+                    'description' => 'Latest updates, results and information.',
+                    'canonical' => url()->current(),
+                    'schema_type' => $key === 'home' ? 'WebSite' : 'WebPage',
+                ] + ($site ? [
+                    'site_name' => $site->name,
+                    'logo' => $site->logo_url,
+                    'same_as' => $site->same_as ?? [],
+                    'organization_name' => $site->organization_name,
+                ] : []));
+            }
+
+            return $this->normalize($page, [
+                'title' => $site?->name ?: Config::get('app.name', 'Website'),
+                'canonical' => $this->absolutePageUrl($site, $page),
                 'schema_type' => $key === 'home' ? 'WebSite' : 'WebPage',
-            ] + ($site ? [
-                'site_name' => $site->name,
-                'logo' => $site->logo_url,
-                'same_as' => $site->same_as ?? [],
-                'organization_name' => $site->organization_name,
-            ] : []));
-        }
-
-        return $this->normalize($page, [
-            'title' => $site?->name ?: Config::get('app.name', 'Website'),
-            'canonical' => $this->absolutePageUrl($site, $page),
-            'schema_type' => $key === 'home' ? 'WebSite' : 'WebPage',
-            'site_name' => $site?->name,
-            'logo' => $site?->logo_url,
-            'same_as' => $site?->same_as ?? [],
-            'organization_name' => $site?->organization_name,
-        ]);
+                'site_name' => $site?->name,
+                'logo' => $site?->logo_url,
+                'same_as' => $site?->same_as ?? [],
+                'organization_name' => $site?->organization_name,
+            ]);
+        });
     }
 
     public function normalize($seo, array $defaults = []): array
@@ -82,9 +90,18 @@ class SeoService
     {
         $host = strtolower((string) request()->getHost());
         $host = preg_replace('/^www\./', '', $host);
+        $cacheKey = 'seo:site:' . sha1($host);
 
-        $site = SeoSite::query()->where('active', true)->whereRaw('LOWER(domain) = ?', [$host])->first();
-        return $site ?: SeoSite::query()->where('active', true)->orderBy('id')->first();
+        return Cache::remember($cacheKey, now()->addMinutes(2), function () use ($host) {
+            return SeoSite::query()
+                ->where('active', true)
+                ->where('domain', $host)
+                ->first()
+                ?: SeoSite::query()
+                    ->where('active', true)
+                    ->orderBy('id')
+                    ->first();
+        });
     }
 
     protected function pageKeyFromRequest(): string

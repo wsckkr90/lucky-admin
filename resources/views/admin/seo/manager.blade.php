@@ -27,13 +27,57 @@
         <h2 class="mb-1">SEO Manager / SEO प्रबंधक</h2>
         <p class="text-muted mb-0">1. Website चुनें → 2. Public Page चुनें → 3. SEO भरें → 4. Save करें</p>
     </div>
-    <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addWebsite" aria-expanded="false">＋ Add Website / वेबसाइट जोड़ें</button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" type="button" data-collapse-toggle="seoHowTo" aria-expanded="false" aria-controls="seoHowTo">ⓘ How to use / कैसे चलाएँ</button>
+        <button class="btn btn-primary" type="button" data-collapse-toggle="addWebsite" aria-expanded="false" aria-controls="addWebsite">＋ Add Website / वेबसाइट जोड़ें</button>
+    </div>
 </div>
 
 @if(session('success')) <div class="admin-alert admin-alert-success">{{ session('success') }}</div> @endif
 @if($errors->any()) <div class="admin-alert admin-alert-danger">{{ $errors->first() }}</div> @endif
 
-<div class="collapse mb-4" id="addWebsite">
+<div class="collapse hidden mb-4" id="seoHowTo">
+    <div class="card border-primary">
+        <div class="card-header p-4">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                    <h5 class="mb-1">SEO Manager Guide / SEO Manager उपयोग गाइड</h5>
+                    <div class="small text-muted">हर website और उसके public pages का SEO अलग-अलग manage करने का सही workflow.</div>
+                </div>
+                <span class="badge text-bg-primary">Admin Help</span>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <h6 class="fw-bold">1. Website setup / वेबसाइट सेट करें</h6>
+                    <p class="small text-muted mb-2">सबसे पहले <strong>Add Website</strong> खोलें और website name, domain तथा protocol भरें। Logo और social profile URLs optional हैं, लेकिन Organization/brand data सही रखना बेहतर है.</p>
+                    <h6 class="fw-bold mt-3">2. Website चुनें</h6>
+                    <p class="small text-muted mb-2"><strong>Step 1 — Select Website</strong> से उस site को चुनें जिसका SEO update करना है। एक site का SEO दूसरे site पर apply नहीं होगा.</p>
+                    <h6 class="fw-bold mt-3">3. Public Page चुनें</h6>
+                    <p class="small text-muted mb-0"><strong>Step 2 — Select Public Page</strong> से Home, Results, Chart, Blog या उपलब्ध किसी public route को चुनें। SEO values उसी page के लिए save होंगी.</p>
+                </div>
+                <div class="col-lg-6">
+                    <h6 class="fw-bold">4. Basic SEO / मुख्य SEO</h6>
+                    <p class="small text-muted mb-2"><strong>Meta Title</strong> concise और page-specific रखें। <strong>Meta Description</strong> में page का वास्तविक summary दें। <strong>Focus Keyword</strong> मुख्य search phrase है; keyword stuffing न करें.</p>
+                    <h6 class="fw-bold mt-3">5. Canonical + Robots</h6>
+                    <p class="small text-muted mb-2"><strong>Canonical URL</strong> duplicate URLs में preferred URL बताता है। Normal indexable pages के लिए आमतौर पर <strong>index,follow</strong> रखें; जिस page को search results में नहीं चाहिए, उसके लिए ही noindex चुनें.</p>
+                    <h6 class="fw-bold mt-3">6. Social + Schema</h6>
+                    <p class="small text-muted mb-0"><strong>OG/Twitter</strong> fields social share preview के लिए हैं। <strong>Schema</strong> page/entity को structured information देता है; JSON-LD केवल valid और trusted data के साथ रखें.</p>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row g-3">
+                <div class="col-md-4"><div class="p-3 rounded bg-light h-100"><div class="fw-bold mb-1">Recommended routine</div><div class="small text-muted">हर important page के लिए title, description, canonical, robots और social preview check करें.</div></div></div>
+                <div class="col-md-4"><div class="p-3 rounded bg-light h-100"><div class="fw-bold mb-1">Before Save</div><div class="small text-muted">URL path सही है, title/description page content से match करते हैं और accidental noindex नहीं लगा है—यह verify करें.</div></div></div>
+                <div class="col-md-4"><div class="p-3 rounded bg-light h-100"><div class="fw-bold mb-1">After Save</div><div class="small text-muted">Success message देखकर अगले page पर जाएँ। Public site पर cache हो तो updated SEO दिखने में थोड़ा समय लग सकता है.</div></div></div>
+            </div>
+            <div class="alert alert-warning mt-4 mb-0 small"><strong>Important:</strong> SEO settings save करने से Google में ranking तुरंत change नहीं होती। यह module page metadata और related SEO information manage करता है; indexing/ranking Google के crawl और evaluation पर निर्भर करती है.</div>
+        </div>
+    </div>
+</div>
+
+<div class="collapse hidden mb-4" id="addWebsite">
     <div class="card">
         <div class="card-header p-4">
             <h5 class="mb-1">Add Website / नई वेबसाइट</h5>

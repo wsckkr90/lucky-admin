@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#172554">
     <title>@yield('title', 'Admin Dashboard') - {{ config('app.name') }}</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>
@@ -93,13 +95,30 @@
         </header>
 
         <div class="admin-content">
-            @if(session('success'))<div class="admin-alert admin-alert-success" role="alert"><strong>Success / सफल:</strong> {{ session('success') }}</div>@endif
-            @if(session('error'))<div class="admin-alert admin-alert-danger" role="alert"><strong>Error / त्रुटि:</strong> {{ session('error') }}</div>@endif
-            @if($errors->any())<div class="admin-alert admin-alert-danger" role="alert"><strong>Please check / कृपया जांचें:</strong> {{ $errors->first() }}</div>@endif
+            @if(session('success'))
+                <div id="admin-success-alert" class="admin-alert admin-alert-success flex items-start justify-between gap-4" role="alert">
+                    <div><strong>Success / सफल:</strong> {{ session('success') }}</div>
+                    <button type="button" data-dismiss-target="#admin-success-alert" aria-label="Dismiss">×</button>
+                </div>
+            @endif
+            @if(session('error'))
+                <div id="admin-error-alert" class="admin-alert admin-alert-danger flex items-start justify-between gap-4" role="alert">
+                    <div><strong>Error / त्रुटि:</strong> {{ session('error') }}</div>
+                    <button type="button" data-dismiss-target="#admin-error-alert" aria-label="Dismiss">×</button>
+                </div>
+            @endif
+            @if($errors->any())
+                <div id="admin-validation-alert" class="admin-alert admin-alert-danger flex items-start justify-between gap-4" role="alert">
+                    <div><strong>Please check / कृपया जांचें:</strong> {{ $errors->first() }}</div>
+                    <button type="button" data-dismiss-target="#admin-validation-alert" aria-label="Dismiss">×</button>
+                </div>
+            @endif
             @yield('content')
         </div>
     </main>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js" defer></script>
 <script>
 function openSidebar(){document.getElementById('adminSidebar')?.classList.add('show');document.getElementById('adminOverlay')?.classList.add('show');document.body.classList.add('sidebar-open');}
 function closeSidebar(){document.getElementById('adminSidebar')?.classList.remove('show');document.getElementById('adminOverlay')?.classList.remove('show');document.body.classList.remove('sidebar-open');}

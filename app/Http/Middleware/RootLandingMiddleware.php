@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +22,7 @@ class RootLandingMiddleware
                 return redirect()->route('admin.dashboard');
             }
 
-            return app(AuthenticatedSessionController::class)->create();
+            return response()->view('auth.login');
         }
 
         return $next($request);

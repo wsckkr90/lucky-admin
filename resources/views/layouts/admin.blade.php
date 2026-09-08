@@ -7,7 +7,7 @@
     <title>@yield('title', 'Admin Dashboard') - {{ config('app.name') }}</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/css/admin-organizer.css', 'resources/js/app.js'])
     @stack('head')
 </head>
 <body class="admin-body">
@@ -89,7 +89,7 @@
                 <form method="POST" action="{{ route('admin.locale.update') }}" class="language-form" title="Language / भाषा">@csrf <span class="language-icon">文</span><select name="locale" onchange="this.form.submit()" aria-label="Language"><option value="en" @selected(session('admin_locale','en') === 'en')>English</option><option value="hi" @selected(session('admin_locale','en') === 'hi')>हिन्दी</option></select></form>
                 @auth
                     <div class="user-chip"><span class="user-avatar">{{ mb_strtoupper(mb_substr(auth()->user()->name ?? 'A', 0, 1)) }}</span><span class="user-details"><strong>{{ auth()->user()->name }}</strong><small>Administrator</small></span></div>
-                    <form method="POST" action="{{ route('logout') }}" class="logout-form">@csrf<button type="submit" class="logout-btn">Logout / बाहर</button></form>
+                    <form method="POST" action="{{ route('logout') }}" class="logout-form"><button type="submit" class="logout-btn" data-no-loading="1">Logout / बाहर</button></form>
                 @endauth
             </div>
         </header>

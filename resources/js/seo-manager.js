@@ -1,0 +1,35 @@
+function initSeoManager(){
+ const root=document.querySelector('.seo-manager-shell');
+ if(!root)return;
+ const site=document.getElementById('seoSiteSelect');
+ const page=document.getElementById('seoPageSelect');
+ const go=(siteId,pageId)=>{const u=new URL(window.location.href);u.searchParams.set('site',siteId);if(pageId)u.searchParams.set('page',pageId);else u.searchParams.delete('page');window.location.assign(u.toString());};
+ site?.addEventListener('change',()=>go(site.value,null));
+ page?.addEventListener('change',()=>go(site?.value,page.value));
+ const form=document.getElementById('seoForm');
+ if(!form)return;
+ const fields={title:form.querySelector('[name="meta_title"]'),description:form.querySelector('[name="meta_description"]'),keyword:form.querySelector('[name="focus_keyword"]'),canonical:form.querySelector('[name="canonical_url"]'),robots:form.querySelector('[name="robots"]'),ogTitle:form.querySelector('[name="og_title"]'),ogImage:form.querySelector('[name="og_image"]'),twitterTitle:form.querySelector('[name="twitter_title"]'),twitterImage:form.querySelector('[name="twitter_image"]'),schema:form.querySelector('[name="schema_type"]')};
+ const scoreBox=root.querySelector('[data-seo-score]');
+ const progress=root.querySelector('[data-seo-progress]');
+ const checklist=root.querySelector('[data-seo-checklist]');
+ const titleCount=root.querySelector('[data-count="title"]');
+ const descCount=root.querySelector('[data-count="description"]');
+ const previewTitle=root.querySelector('[data-preview="title"]');
+ const previewDescription=root.querySelector('[data-preview="description"]');
+ const previewUrl=root.querySelector('[data-preview="url"]');
+ const checks=[['title','Meta title'],['description','Meta description'],['keyword','Focus keyword'],['canonical','Canonical URL'],['robots','Robots'],['ogTitle','OG title'],['ogImage','OG image'],['twitterTitle','Twitter title'],['twitterImage','Twitter image'],['schema','Schema type']];
+ const calc=()=>{let n=0;checks.forEach(([key])=>{if(fields[key]?.value?.trim())n++});const score=Math.round(n/checks.length*100);if(scoreBox)scoreBox.textContent=score+'%';if(progress)progress.style.width=score+'%';if(checklist){checklist.querySelectorAll('[data-check]').forEach(el=>{const key=el.dataset.check;const ok=!!fields[key]?.value?.trim();el.classList.toggle('done',ok);const icon=el.querySelector('.seo-check');if(icon)icon.textContent=ok?'✓':'•';})}return score};
+ const update=()=>{calc();if(titleCount&&fields.title)titleCount.textContent=fields.title.value.length;if(descCount&&fields.description)descCount.textContent=fields.description.value.length;if(previewTitle)previewTitle.textContent=fields.title?.value||'Your page title will appear here';if(previewDescription)previewDescription.textContent=fields.description?.value||'Your meta description will appear here.';if(previewUrl)previewUrl.textContent=fields.canonical?.value||window.location.origin+(fields.path?.value||window.location.pathname)};
+ Object.values(fields).forEach(el=>el?.addEventListener('input',update));form.querySelector('[name="path"]')?.addEventListener('input',update);update();
+ const copy=(from,to)=>{if(from&&to&&!to.value)to.value=from.value;update()};
+ root.querySelector('[data-copy="title-to-og"]')?.addEventListener('click',()=>copy(fields.title,fields.ogTitle));
+ root.querySelector('[data-copy="description-to-og"]')?.addEventListener('click',()=>copy(fields.description,form.querySelector('[name="og_description"]')));
+ root.querySelector('[data-copy="title-to-twitter"]')?.addEventListener('click',()=>copy(fields.title,fields.twitterTitle));
+ root.querySelector('[data-copy="description-to-twitter"]')?.addEventListener('click',()=>copy(fields.description,form.querySelector('[name="twitter_description"]')));
+ root.querySelector('[data-copy="canonical"]')?.addEventListener('click',()=>{const path=form.querySelector('[name="path"]')?.value||'/';if(fields.canonical)fields.canonical.value=new URL(path,window.location.origin).href;update()});
+ root.querySelector('[data-schema-format]')?.addEventListener('click',()=>{const input=form.querySelector('[name="schema_json"]');if(!input||!input.value.trim())return;try{input.value=JSON.stringify(JSON.parse(input.value),null,2);update()}catch(e){alert('Schema JSON is invalid / Schema JSON गलत है।')}});
+ root.querySelector('[data-seo-filter]')?.addEventListener('input',e=>{const q=e.target.value.toLowerCase();root.querySelectorAll('.seo-page-item').forEach(item=>{item.style.display=item.textContent.toLowerCase().includes(q)?'':'none'})});
+ root.querySelectorAll('[data-seo-tab]').forEach(tab=>tab.addEventListener('click',()=>{const id=tab.dataset.seoTab;root.querySelectorAll('[data-seo-tab]').forEach(t=>t.classList.toggle('active',t===tab));root.querySelectorAll('.seo-section').forEach(s=>s.classList.toggle('active',s.dataset.seoSection===id))}));
+ const schema=form.querySelector('[name="schema_json"]');schema?.addEventListener('blur',()=>{if(!schema.value.trim())return;try{JSON.parse(schema.value);schema.classList.remove('is-invalid')}catch(e){schema.classList.add('is-invalid')}});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initSeoManager,{once:true});else initSeoManager();

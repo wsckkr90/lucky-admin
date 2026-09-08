@@ -1,0 +1,361 @@
+/*
+ * Lucky Admin — cross-module UI normalization
+ * Keeps legacy Bootstrap/Blade modules visually consistent without
+ * requiring every module view to be rewritten at once.
+ */
+
+.admin-content {
+    width: 100%;
+}
+
+.admin-content > .d-flex.justify-content-between,
+.admin-content > .d-flex.align-items-center.justify-content-between {
+    gap: 18px;
+    padding: 2px 0 4px;
+}
+
+.admin-content > .d-flex.justify-content-between > div:first-child h1,
+.admin-content > .d-flex.justify-content-between > div:first-child h2,
+.admin-content > .d-flex.justify-content-between > div:first-child h3 {
+    margin-bottom: 4px;
+    font-weight: 850;
+}
+
+.admin-content > .d-flex.justify-content-between > div:first-child p {
+    max-width: 760px;
+    font-size: 12px;
+}
+
+.admin-content .card-header,
+.admin-content .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.admin-content .card-header > :last-child,
+.admin-content .card-footer > :last-child {
+    margin-left: auto;
+}
+
+.admin-content .card-header .btn,
+.admin-content .card-footer .btn {
+    flex: 0 0 auto;
+}
+
+.admin-content .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+    line-height: 1.1;
+    text-decoration: none;
+    box-shadow: none;
+    transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease, border-color .15s ease;
+}
+
+.admin-content .btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.admin-content .btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.admin-content .btn-sm {
+    min-height: 34px;
+    padding: 7px 10px;
+    border-radius: 8px !important;
+    font-size: 11px;
+}
+
+.admin-content .btn + .btn,
+.admin-content .btn + form,
+.admin-content form + .btn,
+.admin-content form + form {
+    margin-left: 5px;
+}
+
+.admin-content .table td:last-child,
+.admin-content .table th:last-child {
+    white-space: nowrap;
+}
+
+.admin-content .table td.text-end > .btn,
+.admin-content .table td.text-end > form,
+.admin-content .table td.text-end > .action-group {
+    vertical-align: middle;
+}
+
+.admin-content .table td.text-end > form {
+    display: inline-flex;
+}
+
+.admin-content .action-group,
+.admin-content .page-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.admin-content .action-group .btn + .btn,
+.admin-content .page-actions .btn + .btn,
+.admin-content .action-group .btn + form,
+.admin-content .page-actions .btn + form,
+.admin-content .action-group form + .btn,
+.admin-content .page-actions form + .btn {
+    margin-left: 0;
+}
+
+.admin-content .filter-bar,
+.admin-content form .filter-bar {
+    margin-bottom: 18px;
+}
+
+.admin-content .filter-bar .row,
+.admin-content .card-body > form > .row {
+    align-items: end;
+}
+
+.admin-content .form-control,
+.admin-content .form-select {
+    box-shadow: 0 1px 1px rgba(15, 23, 42, .02);
+}
+
+.admin-content .form-control:disabled,
+.admin-content .form-select:disabled,
+.admin-content .btn:disabled {
+    cursor: not-allowed;
+    opacity: .7;
+}
+
+.admin-content .form-check {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-content .form-check-input {
+    margin: 0;
+    width: 17px;
+    height: 17px;
+}
+
+.admin-content .form-check-label {
+    color: #334155;
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.admin-content .table-responsive {
+    scrollbar-width: thin;
+}
+
+.admin-content .table-responsive::-webkit-scrollbar {
+    height: 7px;
+}
+
+.admin-content .table-responsive::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+}
+
+.admin-content .pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 0;
+    padding: 0;
+}
+
+.admin-content .pagination .page-item .page-link {
+    min-width: 35px;
+    min-height: 35px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border: 1px solid #dbe3ee;
+    border-radius: 8px;
+    background: #fff;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 750;
+    text-decoration: none;
+}
+
+.admin-content .pagination .page-item.active .page-link {
+    border-color: var(--admin-primary);
+    background: var(--admin-primary);
+    color: #fff;
+}
+
+.admin-content .pagination .page-item.disabled .page-link {
+    color: #94a3b8;
+    background: #f8fafc;
+}
+
+.admin-content .alert {
+    border-radius: 12px;
+}
+
+.admin-content .dropdown-menu {
+    padding: 6px;
+    border: 1px solid var(--admin-border);
+    border-radius: 11px;
+    box-shadow: 0 16px 35px rgba(15, 23, 42, .12);
+}
+
+.admin-content .dropdown-item {
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.admin-content .dropdown-item:hover,
+.admin-content .dropdown-item:focus {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.admin-content .modal-content {
+    border: 1px solid var(--admin-border);
+    border-radius: 16px;
+    box-shadow: 0 25px 70px rgba(15, 23, 42, .18);
+    overflow: hidden;
+}
+
+.admin-content .modal-header,
+.admin-content .modal-footer {
+    border-color: #eef2f7;
+}
+
+.admin-content .nav-tabs {
+    gap: 4px;
+    border-bottom-color: var(--admin-border);
+}
+
+.admin-content .nav-tabs .nav-link {
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 750;
+}
+
+.admin-content .nav-tabs .nav-link:hover,
+.admin-content .nav-tabs .nav-link.active {
+    color: #1d4ed8;
+    border-bottom-color: #2563eb;
+    background: transparent;
+}
+
+.admin-content .list-group {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.admin-content .list-group-item {
+    border-color: #eef2f7;
+    padding: 12px 14px;
+}
+
+.admin-content .text-end .btn,
+.admin-content .text-end form {
+    margin-bottom: 2px;
+}
+
+.admin-content .is-loading {
+    pointer-events: none;
+    position: relative;
+}
+
+.admin-content .is-loading::before {
+    content: "";
+    width: 13px;
+    height: 13px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: admin-button-spin .65s linear infinite;
+}
+
+@keyframes admin-button-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 900px) {
+    .admin-content {
+        padding: 20px 16px;
+    }
+
+    .admin-content > .d-flex.justify-content-between,
+    .admin-content > .d-flex.align-items-center.justify-content-between {
+        align-items: flex-start !important;
+        flex-direction: column;
+    }
+
+    .admin-content > .d-flex.justify-content-between > .btn,
+    .admin-content > .d-flex.justify-content-between > .page-actions {
+        width: 100%;
+    }
+
+    .admin-content > .d-flex.justify-content-between > .btn {
+        width: auto;
+    }
+
+    .admin-content .card-header,
+    .admin-content .card-footer {
+        align-items: flex-start;
+    }
+
+    .admin-content .card-header > :last-child,
+    .admin-content .card-footer > :last-child {
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-content {
+        padding: 16px 12px;
+    }
+
+    .admin-content .card-body {
+        padding: 1rem;
+    }
+
+    .admin-content .btn:not(.btn-sm) {
+        min-height: 42px;
+    }
+
+    .admin-content .page-actions,
+    .admin-content .action-group {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .admin-content .page-actions .btn,
+    .admin-content .action-group .btn,
+    .admin-content .page-actions form,
+    .admin-content .action-group form {
+        flex: 1 1 auto;
+    }
+
+    .admin-content .page-actions form .btn,
+    .admin-content .action-group form .btn {
+        width: 100%;
+    }
+
+    .admin-content .table {
+        min-width: 680px;
+    }
+}

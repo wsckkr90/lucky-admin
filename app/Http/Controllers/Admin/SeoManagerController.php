@@ -22,9 +22,9 @@ class SeoManagerController extends Controller
 
     public function index(Request $request)
     {
-        // The old implementation loaded every site's full page payload and then
-        // ran firstOrCreate() for every default page on every request. That can
-        // become very slow as SEO data grows, especially on shared hosting.
+        // Load only lightweight site fields. The old implementation loaded
+        // every site's full page payload and then ran firstOrCreate() for every
+        // default page on every request, which is unnecessarily expensive.
         $sites = SeoSite::query()
             ->select(['id', 'name', 'domain'])
             ->where('active', true)
@@ -33,9 +33,7 @@ class SeoManagerController extends Controller
 
         if ($sites->isEmpty()) {
             $selectedSite = $this->createDefaultSite();
-            $sites = collect([
-                $selectedSite->only(['id', 'name', 'domain']),
-            ]);
+            $sites = collect([$selectedSite]);
         }
 
         $selectedSiteId = $request->integer('site') ?: (int) $sites->first()->id;
@@ -54,10 +52,11 @@ class SeoManagerController extends Controller
             ->where('active', true)
             ->findOrFail($selectedSiteId);
 
-        // Keep the GET request read-heavy: only repair missing default pages
-        // for the site the admin is actually viewing.
+        // Repair only the site currently being viewed, not every site.
         $this->ensureDefaultPages($selectedSite);
 
+        // Load the page editor payload only for the selected site. This avoids
+        // pulling large schema_json/extra_head columns for unrelated sites.
         $selectedSite->load([
             'pages' => function ($query) {
                 $query

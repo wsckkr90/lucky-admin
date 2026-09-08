@@ -89,12 +89,16 @@ function improveForms() {
     document.querySelectorAll('form').forEach((form) => {
         form.addEventListener('submit', () => {
             const submit = form.querySelector('button[type="submit"], input[type="submit"]');
-            if (!submit || submit.dataset.noLoading) return;
+            if (!submit || submit.dataset.noLoading !== undefined) return;
             submit.dataset.originalText = submit.innerHTML;
             submit.disabled = true;
+            submit.classList.add('is-loading');
+            submit.setAttribute('aria-busy', 'true');
             submit.innerHTML = 'Saving… / सेव हो रहा है…';
             window.setTimeout(() => {
                 submit.disabled = false;
+                submit.classList.remove('is-loading');
+                submit.removeAttribute('aria-busy');
                 submit.innerHTML = submit.dataset.originalText || 'Save';
             }, 8000);
         });

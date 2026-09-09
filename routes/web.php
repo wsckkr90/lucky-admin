@@ -265,3 +265,6 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__ . '/auth.php';
+
+/* Keep the dedicated SEO Manager routes inside Laravel's normal web route load. */
+require __DIR__ . '/seo-manager.php';

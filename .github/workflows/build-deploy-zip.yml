@@ -1,0 +1,144 @@
+name: Build Deployment ZIP
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, pdo_mysql, bcmath, xml, ctype, curl, zip
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+      - name: Install NPM dependencies and build assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prepare direct-subdomain deployment package
+        shell: bash
+        run: |
+          rm -rf deploy lucky-admin-deploy.zip
+          mkdir -p deploy
+
+          # Copy the Laravel application, excluding development-only material.
+          rsync -a ./ deploy/ \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='node_modules/' \
+            --exclude='tests/' \
+            --exclude='.env' \
+            --exclude='.env.backup' \
+            --exclude='.env.production' \
+            --exclude='public/hot'
+
+          # The ZIP is intended to be extracted directly into a subdomain's
+          # document root. Flatten public/ into the package root while keeping
+          # the original public/ directory as a fallback/reference.
+          cp -a deploy/public/. deploy/
+
+          # Rewrite the copied front controller for the flattened document root.
+          sed -i "s#__DIR__.'/../storage#__DIR__.'/storage#g" deploy/index.php
+          sed -i "s#__DIR__.'/../vendor#__DIR__.'/vendor#g" deploy/index.php
+          sed -i "s#__DIR__.'/../bootstrap#__DIR__.'/bootstrap#g" deploy/index.php
+
+          # Remove duplicate public entry points from the document root only.
+          rm -f deploy/public/index.php deploy/public/.htaccess
+
+          # Ensure Apache routes requests to the flattened index.php.
+          cat > deploy/.htaccess <<'EOF'
+          <IfModule mod_rewrite.c>
+              <IfModule mod_negotiation.c>
+                  Options -MultiViews -Indexes
+              </IfModule>
+
+              RewriteEngine On
+
+              RewriteCond %{HTTP:Authorization} .
+              RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+              RewriteCond %{HTTP:x-xsrf-token} .
+              RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+              RewriteCond %{REQUEST_FILENAME} !-d
+              RewriteCond %{REQUEST_URI} (.+)/$
+              RewriteRule ^ %1 [L,R=301]
+
+              RewriteCond %{REQUEST_FILENAME} !-d
+              RewriteCond %{REQUEST_FILENAME} !-f
+              RewriteRule ^ index.php [L]
+          </IfModule>
+
+          <IfModule mod_expires.c>
+              ExpiresActive On
+              ExpiresByType text/css "access plus 1 year"
+              ExpiresByType application/javascript "access plus 1 year"
+              ExpiresByType application/x-javascript "access plus 1 year"
+              ExpiresByType image/avif "access plus 1 year"
+              ExpiresByType image/webp "access plus 1 year"
+              ExpiresByType image/jpeg "access plus 1 year"
+              ExpiresByType image/png "access plus 1 year"
+              ExpiresByType image/svg+xml "access plus 1 year"
+              ExpiresByType font/woff2 "access plus 1 year"
+          </IfModule>
+
+          <IfModule mod_headers.c>
+              <FilesMatch "\.(?:css|js|avif|webp|jpe?g|png|svg|woff2)$">
+                  Header set Cache-Control "public, max-age=31536000, immutable"
+              </FilesMatch>
+          </IfModule>
+          EOF
+
+          # Do not ship development caches/logs or the GitHub workflow itself.
+          rm -rf deploy/storage/framework/cache/data/*
+          rm -rf deploy/storage/framework/views/*
+          rm -rf deploy/storage/framework/sessions/*
+          rm -rf deploy/storage/logs/*
+          rm -rf deploy/bootstrap/cache/*.php
+          rm -rf deploy/.github
+
+          # Keep .env.example for reference, but never include real environment secrets.
+          cat > deploy/DEPLOYMENT_README.txt <<'EOF'
+          LUCKY ADMIN - DIRECT SUBDOMAIN DEPLOYMENT
+
+          This archive is built from the main branch with Composer production dependencies and Vite assets.
+
+          1. Extract ALL files into the subdomain document root.
+          2. Keep your existing .env file if the server already has one. This ZIP intentionally does not contain .env.
+          3. If this is a fresh installation, copy .env.example to .env and configure APP_URL, database settings, SESSION_DRIVER, and other values.
+          4. Run: php artisan optimize:clear
+          5. For a fresh database run migrations/seeding as appropriate for your environment.
+
+          IMPORTANT: The app requires PHP >= 8.2 and an Apache server with mod_rewrite enabled.
+          The package is flattened so the subdomain can point directly at this extracted directory.
+          EOF
+
+          cd deploy
+          zip -r ../lucky-admin-deploy.zip . -x '*.DS_Store'
+
+      - name: Upload deployment ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: lucky-admin-deploy
+          path: lucky-admin-deploy.zip
+          if-no-files-found: error
+          retention-days: 7

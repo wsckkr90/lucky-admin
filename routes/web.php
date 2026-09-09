@@ -27,26 +27,19 @@ use App\Http\Controllers\Admin\TodayResultController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Public routes
-|--------------------------------------------------------------------------
-*/
-
-// Root is handled without a / -> /login redirect chain.
+/* Public */
 Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('admin.dashboard');
+    }
+
     return view('auth.login');
 })->name('home');
 
 Route::get('/game/{game:slug}', [GamePageController::class, 'show'])
     ->name('game.show');
 
-/*
-|--------------------------------------------------------------------------
-| Public chart routes
-|--------------------------------------------------------------------------
-*/
-
+/* Public charts */
 Route::get('/chart', [ChartController::class, 'index'])
     ->name('chart');
 
@@ -61,29 +54,21 @@ Route::get('/chart/{game}/{year?}', [ChartController::class, 'index'])
     ->where('year', '[0-9]{4}')
     ->name('chart.game');
 
-// Legacy PHP chart URL.
 Route::get('/chart.php', [ChartController::class, 'index'])
     ->name('chart.legacy');
 
-/*
-|--------------------------------------------------------------------------
-| Admin routes
-|--------------------------------------------------------------------------
-*/
-
+/* Admin */
 Route::middleware(['auth', 'admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        /* Dashboard */
         Route::get('/', [DashboardController::class, 'index'])
             ->name('dashboard');
 
-        /* Cities & games */
         Route::resource('cities', CityController::class);
         Route::resource('games', GameController::class);
 
-        /* Results - today routes intentionally come before resource routes. */
+        /* Results: today before /results/{result}. */
         Route::get('/results/today', [TodayResultController::class, 'index'])
             ->name('results.today');
         Route::post('/results/today', [TodayResultController::class, 'update'])
@@ -92,139 +77,100 @@ Route::middleware(['auth', 'admin'])
 
         /* Khaiwals */
         Route::get('/khaiwals', [KhaiwalController::class, 'index'])
-            ->middleware('permission:khaiwals.view')
-            ->name('khaiwals.index');
+            ->middleware('permission:khaiwals.view')->name('khaiwals.index');
         Route::get('/khaiwals/create', [KhaiwalController::class, 'create'])
-            ->middleware('permission:khaiwals.create')
-            ->name('khaiwals.create');
+            ->middleware('permission:khaiwals.create')->name('khaiwals.create');
         Route::post('/khaiwals', [KhaiwalController::class, 'store'])
-            ->middleware('permission:khaiwals.create')
-            ->name('khaiwals.store');
+            ->middleware('permission:khaiwals.create')->name('khaiwals.store');
         Route::get('/khaiwals/{khaiwal}/edit', [KhaiwalController::class, 'edit'])
-            ->middleware('permission:khaiwals.update')
-            ->name('khaiwals.edit');
+            ->middleware('permission:khaiwals.update')->name('khaiwals.edit');
         Route::put('/khaiwals/{khaiwal}', [KhaiwalController::class, 'update'])
-            ->middleware('permission:khaiwals.update')
-            ->name('khaiwals.update');
+            ->middleware('permission:khaiwals.update')->name('khaiwals.update');
         Route::delete('/khaiwals/{khaiwal}', [KhaiwalController::class, 'destroy'])
-            ->middleware('permission:khaiwals.delete')
-            ->name('khaiwals.destroy');
+            ->middleware('permission:khaiwals.delete')->name('khaiwals.destroy');
         Route::post('/khaiwals/{khaiwal}/toggle', [KhaiwalController::class, 'toggle'])
-            ->middleware('permission:khaiwals.update')
-            ->name('khaiwals.toggle');
+            ->middleware('permission:khaiwals.update')->name('khaiwals.toggle');
 
         /* Forum */
         Route::get('/forum', [ForumController::class, 'index'])
-            ->middleware('permission:forum.view')
-            ->name('forum.index');
+            ->middleware('permission:forum.view')->name('forum.index');
         Route::get('/forum/{forumPost}', [ForumController::class, 'show'])
-            ->middleware('permission:forum.view')
-            ->name('forum.show');
+            ->middleware('permission:forum.view')->name('forum.show');
         Route::put('/forum/{forumPost}', [ForumController::class, 'update'])
-            ->middleware('permission:forum.update')
-            ->name('forum.update');
+            ->middleware('permission:forum.update')->name('forum.update');
         Route::delete('/forum/{forumPost}', [ForumController::class, 'destroy'])
-            ->middleware('permission:forum.delete')
-            ->name('forum.destroy');
+            ->middleware('permission:forum.delete')->name('forum.destroy');
 
         /* Cache */
         Route::get('/cache', [CacheController::class, 'index'])
-            ->middleware('permission:cache.view')
-            ->name('cache.index');
+            ->middleware('permission:cache.view')->name('cache.index');
         Route::post('/cache/clear', [CacheController::class, 'clear'])
-            ->middleware('permission:cache.clear')
-            ->name('cache.clear');
+            ->middleware('permission:cache.clear')->name('cache.clear');
 
         /* Scheduler */
         Route::get('/scheduler', [SchedulerController::class, 'index'])
-            ->middleware('permission:scheduler.view')
-            ->name('scheduler.index');
+            ->middleware('permission:scheduler.view')->name('scheduler.index');
         Route::post('/scheduler/run', [SchedulerController::class, 'run'])
-            ->middleware('permission:scheduler.run')
-            ->name('scheduler.run');
+            ->middleware('permission:scheduler.run')->name('scheduler.run');
 
         /* Lucky numbers */
         Route::get('/lucky-numbers', [LuckyNumberController::class, 'index'])
-            ->middleware('permission:lucky-numbers.view')
-            ->name('lucky-numbers.index');
+            ->middleware('permission:lucky-numbers.view')->name('lucky-numbers.index');
         Route::put('/lucky-numbers', [LuckyNumberController::class, 'update'])
-            ->middleware('permission:lucky-numbers.update')
-            ->name('lucky-numbers.update');
+            ->middleware('permission:lucky-numbers.update')->name('lucky-numbers.update');
         Route::post('/lucky-numbers/scrape', [LuckyNumberController::class, 'scrapeNow'])
-            ->middleware('permission:lucky-numbers.update')
-            ->name('lucky-numbers.scrape');
+            ->middleware('permission:lucky-numbers.update')->name('lucky-numbers.scrape');
 
         /* Blogs */
         Route::get('/blogs', [BlogController::class, 'index'])
-            ->middleware('permission:blogs.view')
-            ->name('blogs.index');
+            ->middleware('permission:blogs.view')->name('blogs.index');
         Route::get('/blogs/create', [BlogController::class, 'create'])
-            ->middleware('permission:blogs.create')
-            ->name('blogs.create');
+            ->middleware('permission:blogs.create')->name('blogs.create');
         Route::post('/blogs', [BlogController::class, 'store'])
-            ->middleware('permission:blogs.create')
-            ->name('blogs.store');
+            ->middleware('permission:blogs.create')->name('blogs.store');
         Route::get('/blogs/{blog}/edit', [BlogController::class, 'edit'])
-            ->middleware('permission:blogs.update')
-            ->name('blogs.edit');
+            ->middleware('permission:blogs.update')->name('blogs.edit');
         Route::put('/blogs/{blog}', [BlogController::class, 'update'])
-            ->middleware('permission:blogs.update')
-            ->name('blogs.update');
+            ->middleware('permission:blogs.update')->name('blogs.update');
         Route::delete('/blogs/{blog}', [BlogController::class, 'destroy'])
-            ->middleware('permission:blogs.delete')
-            ->name('blogs.destroy');
+            ->middleware('permission:blogs.delete')->name('blogs.destroy');
         Route::post('/blogs/{blog}/publish', [BlogController::class, 'publish'])
-            ->middleware('permission:blogs.publish')
-            ->name('blogs.publish');
+            ->middleware('permission:blogs.publish')->name('blogs.publish');
         Route::post('/blogs/{blog}/unpublish', [BlogController::class, 'unpublish'])
-            ->middleware('permission:blogs.publish')
-            ->name('blogs.unpublish');
+            ->middleware('permission:blogs.publish')->name('blogs.unpublish');
         Route::post('/blogs/{blog}/toggle-featured', [BlogController::class, 'toggleFeatured'])
-            ->middleware('permission:blogs.update')
-            ->name('blogs.toggle-featured');
+            ->middleware('permission:blogs.update')->name('blogs.toggle-featured');
 
         /* Social */
         Route::get('/social', [SocialController::class, 'index'])
-            ->middleware('permission:social.view')
-            ->name('social.index');
+            ->middleware('permission:social.view')->name('social.index');
         Route::put('/social', [SocialController::class, 'update'])
-            ->middleware('permission:social.update')
-            ->name('social.update');
+            ->middleware('permission:social.update')->name('social.update');
 
         /* FAQs */
         Route::get('/faqs', [FaqController::class, 'index'])
-            ->middleware('permission:faqs.view')
-            ->name('faqs.index');
+            ->middleware('permission:faqs.view')->name('faqs.index');
         Route::get('/faqs/create', [FaqController::class, 'create'])
-            ->middleware('permission:faqs.create')
-            ->name('faqs.create');
+            ->middleware('permission:faqs.create')->name('faqs.create');
         Route::post('/faqs', [FaqController::class, 'store'])
-            ->middleware('permission:faqs.create')
-            ->name('faqs.store');
+            ->middleware('permission:faqs.create')->name('faqs.store');
         Route::get('/faqs/{faq}/edit', [FaqController::class, 'edit'])
-            ->middleware('permission:faqs.update')
-            ->name('faqs.edit');
+            ->middleware('permission:faqs.update')->name('faqs.edit');
         Route::put('/faqs/{faq}', [FaqController::class, 'update'])
-            ->middleware('permission:faqs.update')
-            ->name('faqs.update');
+            ->middleware('permission:faqs.update')->name('faqs.update');
         Route::delete('/faqs/{faq}', [FaqController::class, 'destroy'])
-            ->middleware('permission:faqs.delete')
-            ->name('faqs.destroy');
+            ->middleware('permission:faqs.delete')->name('faqs.destroy');
         Route::post('/faqs/{faq}/toggle', [FaqController::class, 'toggle'])
-            ->middleware('permission:faqs.update')
-            ->name('faqs.toggle');
+            ->middleware('permission:faqs.update')->name('faqs.toggle');
 
         /* SEO */
         Route::get('/seo', [SeoController::class, 'index'])
-            ->middleware('permission:seo.view')
-            ->name('seo.index');
-
+            ->middleware('permission:seo.view')->name('seo.index');
         Route::get('/seo/{type}/{id}/edit', [SeoController::class, 'edit'])
             ->middleware('permission:seo.update')
             ->whereIn('type', ['game', 'blog'])
             ->whereNumber('id')
             ->name('seo.edit');
-
         Route::put('/seo/{type}/{id}', [SeoController::class, 'update'])
             ->middleware('permission:seo.update')
             ->whereIn('type', ['game', 'blog'])
@@ -233,96 +179,69 @@ Route::middleware(['auth', 'admin'])
 
         /* SEO content */
         Route::get('/seo/game/{game}/content', [SeoContentController::class, 'index'])
-            ->middleware('permission:seo.view')
-            ->name('seo.content.index');
+            ->middleware('permission:seo.view')->name('seo.content.index');
         Route::post('/seo/game/{game}/content', [SeoContentController::class, 'storeContent'])
-            ->middleware('permission:seo.update')
-            ->name('seo.content.store');
+            ->middleware('permission:seo.update')->name('seo.content.store');
         Route::put('/seo/content/{seoContent}', [SeoContentController::class, 'updateContent'])
-            ->middleware('permission:seo.update')
-            ->name('seo.content.update');
+            ->middleware('permission:seo.update')->name('seo.content.update');
         Route::delete('/seo/content/{seoContent}', [SeoContentController::class, 'destroyContent'])
-            ->middleware('permission:seo.delete')
-            ->name('seo.content.destroy');
+            ->middleware('permission:seo.delete')->name('seo.content.destroy');
         Route::post('/seo/content/{seoContent}/toggle', [SeoContentController::class, 'toggleContent'])
-            ->middleware('permission:seo.update')
-            ->name('seo.content.toggle');
+            ->middleware('permission:seo.update')->name('seo.content.toggle');
 
-        /* SEO FAQs - declared exactly once. */
+        /* SEO FAQs - no duplicates. */
         Route::post('/seo/game/{game}/faq', [SeoContentController::class, 'storeFaq'])
-            ->middleware('permission:seo.update')
-            ->name('seo.faq.store');
+            ->middleware('permission:seo.update')->name('seo.faq.store');
         Route::put('/seo/faq/{faq}', [SeoContentController::class, 'updateFaq'])
-            ->middleware('permission:seo.update')
-            ->name('seo.faq.update');
+            ->middleware('permission:seo.update')->name('seo.faq.update');
         Route::delete('/seo/faq/{faq}', [SeoContentController::class, 'destroyFaq'])
-            ->middleware('permission:seo.delete')
-            ->name('seo.faq.destroy');
+            ->middleware('permission:seo.delete')->name('seo.faq.destroy');
         Route::post('/seo/faq/{faq}/toggle', [SeoContentController::class, 'toggleFaq'])
-            ->middleware('permission:seo.update')
-            ->name('seo.faq.toggle');
+            ->middleware('permission:seo.update')->name('seo.faq.toggle');
 
         /* Settings */
         Route::get('/settings', [SettingsController::class, 'index'])
-            ->middleware('permission:settings.view')
-            ->name('settings.index');
+            ->middleware('permission:settings.view')->name('settings.index');
         Route::put('/settings', [SettingsController::class, 'update'])
-            ->middleware('permission:settings.update')
-            ->name('settings.update');
+            ->middleware('permission:settings.update')->name('settings.update');
 
         /* Scraper */
         Route::get('/scraper', [ScraperController::class, 'index'])
-            ->middleware('permission:scraper.view')
-            ->name('scraper.index');
+            ->middleware('permission:scraper.view')->name('scraper.index');
         Route::get('/scraper/create', [ScraperController::class, 'create'])
-            ->middleware('permission:scraper.create')
-            ->name('scraper.create');
+            ->middleware('permission:scraper.create')->name('scraper.create');
         Route::post('/scraper', [ScraperController::class, 'store'])
-            ->middleware('permission:scraper.create')
-            ->name('scraper.store');
+            ->middleware('permission:scraper.create')->name('scraper.store');
         Route::post('/scraper/{source}/run', [ScraperController::class, 'run'])
-            ->middleware('permission:scraper.run')
-            ->name('scraper.run');
+            ->middleware('permission:scraper.run')->name('scraper.run');
 
         /* Charts */
         Route::get('/charts', [ChartController2::class, 'index'])
-            ->middleware('permission:charts.view')
-            ->name('charts.index');
+            ->middleware('permission:charts.view')->name('charts.index');
         Route::post('/charts/week/update', [ChartController2::class, 'updateWeek'])
-            ->middleware('permission:charts.update')
-            ->name('charts.week.update');
+            ->middleware('permission:charts.update')->name('charts.week.update');
         Route::get('/charts/{chartEntry}', [ChartController2::class, 'show'])
-            ->middleware('permission:charts.view')
-            ->name('charts.show');
+            ->middleware('permission:charts.view')->name('charts.show');
         Route::get('/charts/{chartEntry}/edit', [ChartController2::class, 'edit'])
-            ->middleware('permission:charts.update')
-            ->name('charts.edit');
+            ->middleware('permission:charts.update')->name('charts.edit');
         Route::put('/charts/{chartEntry}', [ChartController2::class, 'update'])
-            ->middleware('permission:charts.update')
-            ->name('charts.update');
+            ->middleware('permission:charts.update')->name('charts.update');
 
         /* Users */
         Route::get('/users', [UserController::class, 'index'])
-            ->middleware('permission:users.view')
-            ->name('users.index');
+            ->middleware('permission:users.view')->name('users.index');
         Route::get('/users/create', [UserController::class, 'create'])
-            ->middleware('permission:users.create')
-            ->name('users.create');
+            ->middleware('permission:users.create')->name('users.create');
         Route::post('/users', [UserController::class, 'store'])
-            ->middleware('permission:users.create')
-            ->name('users.store');
+            ->middleware('permission:users.create')->name('users.store');
         Route::get('/users/{user}', [UserController::class, 'show'])
-            ->middleware('permission:users.view')
-            ->name('users.show');
+            ->middleware('permission:users.view')->name('users.show');
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])
-            ->middleware('permission:users.update')
-            ->name('users.edit');
-        Route::put('/users/{user}', [UserController::class, 'update'])
-            ->middleware('permission:users.update')
-            ->name('users.update');
+            ->middleware('permission:users.update')->name('users.edit');
+        Route::match(['put', 'patch'], '/users/{user}', [UserController::class, 'update'])
+            ->middleware('permission:users.update')->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])
-            ->middleware('permission:users.delete')
-            ->name('users.destroy');
+            ->middleware('permission:users.delete')->name('users.destroy');
 
         /* Roles & permissions */
         Route::resource('roles', RoleController::class);
@@ -335,12 +254,7 @@ Route::middleware(['auth', 'admin'])
             ->name('activity-logs.show');
     });
 
-/*
-|--------------------------------------------------------------------------
-| Profile routes
-|--------------------------------------------------------------------------
-*/
-
+/* Profile */
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->name('profile.edit');
@@ -349,11 +263,5 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->name('profile.destroy');
 });
-
-/*
-|--------------------------------------------------------------------------
-| Authentication
-|--------------------------------------------------------------------------
-*/
 
 require __DIR__ . '/auth.php';

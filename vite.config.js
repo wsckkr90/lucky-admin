@@ -6,6 +6,7 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
+                'resources/css/admin-organizer.css',
                 'resources/js/app.js',
                 'resources/css/public.css',
             ],
